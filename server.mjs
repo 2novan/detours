@@ -4,6 +4,7 @@ import { extname, join, normalize } from 'node:path';
 
 const ROOT = new URL('./public/', import.meta.url).pathname;
 const DATA = new URL('./data/', import.meta.url).pathname;
+const SRC = new URL('./src/', import.meta.url).pathname;
 const PORT = process.env.PORT || 8080;
 const MIME = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript',
@@ -16,7 +17,8 @@ const server = createServer(async (req, res) => {
     let url = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     let file = join(ROOT, url === '/' ? 'index.html' : url);
     if (url.startsWith('/data/')) file = join(DATA, url.slice('/data/'.length));
-    if (!file.startsWith(ROOT) && !file.startsWith(DATA)) throw new Error('forbidden');
+    if (url.startsWith('/src/')) file = join(SRC, url.slice('/src/'.length));
+    if (!file.startsWith(ROOT) && !file.startsWith(DATA) && !file.startsWith(SRC)) throw new Error('forbidden');
     try { if ((await stat(file)).isDirectory()) file = join(file, 'index.html'); } catch {}
     const data = await readFile(file);
     res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'application/octet-stream' });
