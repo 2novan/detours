@@ -26,7 +26,7 @@ test('les POI sélectionnés appartiennent aux catégories choisies', () => {
   assert.ok(route.pois.every((p) => p.category === 'nature'));
 });
 
-test('les POI confondus avec le départ ou l'arrivée ne sont pas pivots', () => {
+test("les POI confondus avec le départ ou l'arrivée ne sont pas pivots", () => {
   const eiffel = pois.find((p) => p.id === 'eiffel');
   const pivots = rankPivots(pois, { lat: eiffel.lat, lon: eiffel.lon }, end, { interest: 0.6, maxDetour: 1 });
   assert.ok(pivots.every((p) => p.id !== 'eiffel'), 'le POI de départ est exclu');
