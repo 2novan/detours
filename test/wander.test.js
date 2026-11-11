@@ -40,9 +40,9 @@ test('rien ne rentre : renvoie la plus petite boucle possible avec un avertissem
 test('variantes de flânerie : une boucle par secteur géographique', async () => {
   const { planWanderVariants } = await import('../src/wander.js');
   const spread = [
-    { id: 'n', city: 'paris', category: 'monument', lat: 48.870, lon: 2.347, interest: 0.8, detourPenalty: 0.02 },
-    { id: 'e', city: 'paris', category: 'nature', lat: 48.858, lon: 2.367, interest: 0.7, detourPenalty: 0.02 },
-    { id: 'w', city: 'paris', category: 'viewpoint', lat: 48.858, lon: 2.327, interest: 0.6, detourPenalty: 0.02 }
+    { id: 'n', city: 'paris', category: 'monument', lat: 48.872, lon: 2.2945, interest: 0.8, detourPenalty: 0.02 },
+    { id: 'e', city: 'paris', category: 'nature', lat: 48.8584, lon: 2.315, interest: 0.7, detourPenalty: 0.02 },
+    { id: 'w', city: 'paris', category: 'viewpoint', lat: 48.8584, lon: 2.274, interest: 0.6, detourPenalty: 0.02 }
   ];
   const variants = await planWanderVariants(start, spread, { duration: 3600, speed: 1.35 }, { osrmRoute: mockOsrm(1000) });
   assert.ok(variants.length >= 2, 'au moins deux secteurs proposés');
