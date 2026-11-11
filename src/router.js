@@ -17,10 +17,17 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
   const budget = direct.distance * (1 + (options.maxDetour ?? 0.25));
 
   const candidates = rankPivots(pois, start, end, options).slice(0, 6);
-  const minEfficiency = 3 - 2.5 * (options.interest ?? 0.5);
-  const accepted = [];
-  let currentDistance = direct.distance;
+  const minEfficiency = (1 - (options.interest ?? 0.5)) * 1.2;
+  const solo = [];
   for (const poi of candidates) {
+    const attempt = await route([start, poi, end]);
+    solo.push({ poi, added: attempt.distance - direct.distance });
+  }
+  solo.sort((a, b) => a.added - b.added);
+  const accepted = [];
+  for (const { poi, added } of solo) {
+    const efficiency = (poi.interest / Math.max(added, 1)) * 1000;
+    if (added > 0 && efficiency < minEfficiency) continue;
     let best = null;
     for (let pos = 0; pos <= accepted.length; pos++) {
       const waypoints = [start, ...accepted.slice(0, pos), poi, ...accepted.slice(pos), end];
@@ -29,12 +36,7 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
         best = { distance: attempt.distance, pos, geometry: attempt.geometry };
       }
     }
-    if (!best) continue;
-    const added = best.distance - currentDistance;
-    const efficiency = (poi.interest / Math.max(added, 1)) * 1000;
-    if (added > 0 && efficiency < minEfficiency) continue;
-    accepted.splice(best.pos, 0, poi);
-    currentDistance = best.distance;
+    if (best) accepted.splice(best.pos, 0, poi);
   }
   const final = accepted.length > 0 ? await route([start, ...accepted, end]) : direct;
   return finalize(final, direct, accepted, options);

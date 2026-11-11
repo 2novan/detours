@@ -29,17 +29,14 @@ export function rankPivots(pois, start, end, { interest, maxDetour }) {
     .sort((x, y) => y.interest / Math.max(y.cost, 1) - x.interest / Math.max(x.cost, 1));
 
   const picks = [];
-  let used = 0;
   const targetCount = Math.max(
     MIN_PIVOTS,
     Math.round(MIN_PIVOTS + interest * (MAX_PIVOTS - MIN_PIVOTS))
   );
   for (const s of scored) {
     if (picks.length >= targetCount) break;
-    if (used + s.cost > budget) continue;
     if (picks.some((p) => haversine(p, s.poi) < direct * 0.05)) continue;
     picks.push(s.poi);
-    used += s.cost;
   }
   return picks;
 }
