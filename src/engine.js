@@ -15,11 +15,15 @@ function detourCost(poi, a, b) {
   return through + poi.detourPenalty * haversine(a, b);
 }
 
-function selectPivots(pois, start, end, { interest, maxDetour }) {
+export function rankPivots(pois, start, end, { interest, maxDetour }) {
   if (pois.length === 0) return [];
   const direct = haversine(start, end);
+  const endpointRadius = Math.max(100, direct * 0.02);
+  const candidates = pois.filter(
+    (p) => haversine(p, start) >= endpointRadius && haversine(p, end) >= endpointRadius
+  );
   const budget = direct * (1 + maxDetour) - direct;
-  const scored = pois
+  const scored = candidates
     .map((p) => ({ poi: p, cost: detourCost(p, start, end), interest: p.interest }))
     .filter((s) => s.cost <= budget * 0.9)
     .sort((x, y) => y.interest / Math.max(y.cost, 1) - x.interest / Math.max(x.cost, 1));
@@ -69,7 +73,7 @@ function routeLength(start, pivots, end) {
 export function buildRoute(start, end, pois, options = {}) {
   const { interest = 0.5, maxDetour = 0.25, speed = 1.35, categories = CATEGORIES } = options;
   const eligible = filterPois(pois, categories, options.city ?? pois[0]?.city);
-  const pivots = orderPivots(selectPivots(eligible, start, end, { interest, maxDetour }), start, end);
+  const pivots = orderPivots(rankPivots(eligible, start, end, { interest, maxDetour }), start, end);
   const points = [start, ...pivots, end];
   const distance = totalDistance(points);
   const directDistance = haversine(start, end);

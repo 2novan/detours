@@ -1,4 +1,4 @@
-import { buildRoute } from './engine.js';
+import { rankPivots } from './engine.js';
 
 const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving';
 
@@ -16,17 +16,21 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
   const direct = await route([start, end]);
   const budget = direct.distance * (1 + (options.maxDetour ?? 0.25));
 
-  let pivots = buildRoute(start, end, pois, { ...options, maxDetour: 1 }).pois;
-  while (pivots.length > 0) {
-    const attempt = await route([start, ...pivots, end]);
-    if (attempt.distance <= budget) {
-      return finalize(attempt, direct, pivots, options);
+  const candidates = rankPivots(pois, start, end, options).slice(0, 6);
+  const accepted = [];
+  for (const poi of candidates) {
+    let best = null;
+    for (let pos = 0; pos <= accepted.length; pos++) {
+      const waypoints = [start, ...accepted.slice(0, pos), poi, ...accepted.slice(pos), end];
+      const attempt = await route(waypoints);
+      if (attempt.distance <= budget && (!best || attempt.distance < best.distance)) {
+        best = { distance: attempt.distance, pos, geometry: attempt.geometry };
+      }
     }
-    const weakest = pivots.reduce((m, p) => (p.interest < m.interest ? p : m), pivots[0]);
-    pivots = pivots.filter((p) => p !== weakest);
+    if (best) accepted.splice(best.pos, 0, poi);
   }
-  const fallback = await route([start, end]);
-  return finalize(fallback, direct, [], options);
+  const final = accepted.length > 0 ? await route([start, ...accepted, end]) : direct;
+  return finalize(final, direct, accepted, options);
 }
 
 function finalize(route, direct, pivots, options) {
