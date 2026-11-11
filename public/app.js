@@ -81,6 +81,17 @@ function render(route) {
   } else {
     map.addSource('route-pois', { type: 'geojson', data: poiData });
     map.addLayer({ id: 'poi-points', type: 'circle', source: 'route-pois', paint: { 'circle-color': '#2a6f4e', 'circle-radius': 7, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
+    map.addLayer({
+      id: 'poi-labels', type: 'symbol', source: 'route-pois',
+      layout: { 'text-field': ['get', 'rank'], 'text-size': 11, 'text-offset': [0, 0.05], 'text-anchor': 'center' },
+      paint: { 'text-color': '#fff' }
+    });
+    map.on('click', 'poi-points', (e) => {
+      const f = e.features[0];
+      new maplibregl.Popup().setLngLat(f.geometry.coordinates)
+        .setHTML(`<strong>${f.properties.name}</strong><p>${f.properties.description}</p>`)
+        .addTo(map);
+    });
   }
 
   const bounds = line.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(line[0], line[0]));
@@ -94,21 +105,26 @@ function render(route) {
     <li><strong>POI :</strong> ${route.pois.length}</li>
     <li><strong>Score intérêt / détour :</strong> ${route.score.toFixed(2)}</li>`;
   el('poiList').innerHTML = route.pois.map((p, i) => `
-    <li class="poi-card">
+    <li class="poi-card" data-lat="${p.lat}" data-lon="${p.lon}">
       ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" />` : ''}
       <h3>${i + 1}. ${p.name}</h3>
       <p class="cat-${p.category}">${p.category}</p>
       <p>${p.description}</p>
     </li>`).join('');
+  el('poiList').querySelectorAll('.poi-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      map.flyTo({ center: [parseFloat(card.dataset.lon), parseFloat(card.dataset.lat)], zoom: 16 });
+    });
+  });
 }
 
 function poiFeatureCollection(pois) {
   return {
     type: 'FeatureCollection',
-    features: pois.map((p) => ({
+    features: pois.map((p, i) => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
-      properties: { name: p.name, description: p.description }
+      properties: { rank: i + 1, name: p.name, description: p.description }
     }))
   };
 }
