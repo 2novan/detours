@@ -47,5 +47,5 @@ test('variantes de flânerie : une boucle par secteur géographique', async () =
   const variants = await planWanderVariants(start, spread, { duration: 3600, speed: 1.35 }, { osrmRoute: mockOsrm(1000) });
   assert.ok(variants.length >= 2, 'au moins deux secteurs proposés');
   assert.ok(variants.every((v) => v.label && v.loop && v.pois.length > 0));
-  assert.ok(variants.some((v) => v.label === 'vers le nord'));
+  assert.ok(variants.some((v) => v.label === 'Vers le nord'));
 });
