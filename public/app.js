@@ -159,7 +159,15 @@ function drawRoute(route) {
     return new maplibregl.Marker({ element: btn }).setLngLat([p.lon, p.lat]).addTo(map);
   });
   const bounds = line.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(line[0], line[0]));
-  map.fitBounds(bounds, { padding: 60 });
+  const mobile = window.innerWidth < 768;
+  map.fitBounds(bounds, {
+    padding: {
+      top: 30,
+      bottom: mobile ? window.innerHeight * 0.6 : 40,
+      left: mobile ? 30 : 440,
+      right: 30
+    }
+  });
 }
 
 function setLine(id, coordinates) {
@@ -203,13 +211,9 @@ function renderWander(route) {
   const g = el('wanderGmaps');
   g.href = gmapsUrl(route);
   g.hidden = false;
-  el('wanderProfile').innerHTML = `
-    <ul>
-      <li><strong>Distance :</strong> ${(route.distance / 1000).toFixed(2)} km</li>
-      <li><strong>Durée estimée :</strong> ${Math.round(route.duration / 60)} min</li>
-      <li><strong>POI :</strong> ${route.pois.length}</li>
-      ${route.overBudget ? '<li class="hint"><strong>Durée dépassée.</strong><br />La boucle la plus courte possible dépasse la durée demandée.</li>' : ''}
-    </ul>`;
+  el('wanderProfile').innerHTML = route.overBudget
+    ? '<ul><li class="hint"><strong>Durée dépassée.</strong><br />La boucle la plus courte possible dépasse la durée demandée.</li></ul>'
+    : '';
   el('wanderPoiList').innerHTML = poiCardsHtml(route.pois);
   attachCardNavigation('wanderPoiList');
 }

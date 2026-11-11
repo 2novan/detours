@@ -12,7 +12,7 @@ function bearing(from, to) {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-const SECTOR_LABELS = ['vers le nord', "vers l'est / sud-est", "vers l'ouest / sud-ouest"];
+const SECTOR_LABELS = ['Vers le nord', "Vers l'est / sud-est", "Vers l'ouest / sud-ouest"];
 
 export async function planWanderVariants(start, pois, options = {}, deps = {}) {
   const speed = options.speed ?? 1.35;
