@@ -22,22 +22,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, var(--green), #1f5c40);
-  color: #fff;
-}
-header h1 { margin: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.02em; }
-.tagline { margin: 0; font-style: italic; opacity: 0.85; font-size: 0.8rem; }
-
 #map {
   position: fixed;
   inset: 0;
@@ -210,6 +194,21 @@ ol { list-style: none; padding: 0; margin: 0; }
 .cat-street_art { background: #f3e7f0; color: #7d3a6e; }
 .cat-nature { background: #e7f0eb; color: var(--green-dark); }
 .cat-viewpoint { background: #fdf3e3; color: var(--orange-dark); }
+.gmaps {
+  display: block;
+  text-align: center;
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+}
+.gmaps:hover { border-color: var(--green); }
 .wiki {
   display: inline-block;
   margin-top: 6px;
@@ -265,7 +264,7 @@ footer {
 /* Desktop : panneau latéral */
 @media (min-width: 768px) {
   #panel {
-    top: 48px;
+    top: 0;
     left: 0;
     bottom: 24px;
     width: 400px;
@@ -276,5 +275,4 @@ footer {
   .screen { padding: 16px 20px 32px; }
   #map { left: 400px; inset: 0 auto 0 400px; right: 0; }
   footer { left: 400px; }
-  header { right: auto; min-width: 400px; }
 }

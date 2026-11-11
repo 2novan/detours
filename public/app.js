@@ -188,8 +188,21 @@ function attachCardNavigation(listId) {
   });
 }
 
+function gmapsUrl(route) {
+  const pts = route.geometry;
+  const origin = `${pts[0].lat},${pts[0].lon}`;
+  const dest = `${pts.at(-1).lat},${pts.at(-1).lon}`;
+  const waypoints = route.pois.map((p) => `${p.lat},${p.lon}`).join('|');
+  let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=walking`;
+  if (waypoints) url += `&waypoints=${waypoints}`;
+  return url;
+}
+
 function renderWander(route) {
   drawRoute(route);
+  const g = el('wanderGmaps');
+  g.href = gmapsUrl(route);
+  g.hidden = false;
   el('wanderProfile').innerHTML = `
     <ul>
       <li><strong>Distance :</strong> ${(route.distance / 1000).toFixed(2)} km</li>
@@ -203,6 +216,9 @@ function renderWander(route) {
 
 function renderRoute(route) {
   drawRoute(route);
+  const g = el('routeGmaps');
+  g.href = gmapsUrl(route);
+  g.hidden = false;
   el('stats').innerHTML = `
     <li><strong>Distance :</strong> ${(route.distance / 1000).toFixed(2)} km (direct : ${(route.directDistance / 1000).toFixed(2)} km)</li>
     <li><strong>Durée estimée :</strong> ${Math.round(route.duration / 60)} min</li>
@@ -228,6 +244,8 @@ function clearResults() {
   markers = [];
   el('wanderResults').hidden = true;
   el('routeResults').hidden = true;
+  el('wanderGmaps').hidden = true;
+  el('routeGmaps').hidden = true;
 }
 
 loadCities();

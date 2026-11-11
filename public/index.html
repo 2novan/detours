@@ -10,10 +10,6 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Détours</h1>
-    <p class="tagline">Le trajet devient la visite.</p>
-  </header>
   <main>
     <aside id="panel">
 
@@ -58,6 +54,7 @@
           <h3>Boucles proposées</h3>
           <div id="variantList"></div>
           <div id="wanderProfile"></div>
+          <a id="wanderGmaps" class="gmaps" target="_blank" rel="noopener" hidden>Ouvrir dans Google Maps ↗</a>
           <h3>POI de la boucle</h3>
           <ol id="wanderPoiList"></ol>
         </div>
@@ -94,6 +91,7 @@
         <div id="routeResults" hidden>
           <h3>Profil du parcours</h3>
           <ul id="stats"></ul>
+          <a id="routeGmaps" class="gmaps" target="_blank" rel="noopener" hidden>Ouvrir dans Google Maps ↗</a>
           <h3>POI rencontrés</h3>
           <ol id="poiList"></ol>
         </div>
