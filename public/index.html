@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Détours — Le trajet devient la visite</title>
+  <meta name="description" content="Itinéraires légèrement plus longs, mais plus intéressants : monuments, street art, jardins et points de vue sur le chemin." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Détours</h1>
+    <p class="tagline">Le trajet devient la visite.</p>
+  </header>
+  <main>
+    <aside id="panel">
+      <form id="form">
+        <label>Point A <input id="start" required placeholder="Ex : Tour Eiffel ou 48.8584, 2.2945" /></label>
+        <label>Point B <input id="end" required placeholder="Ex : Notre-Dame ou 48.8530, 2.3499" /></label>
+        <label>Mode
+          <select id="mode">
+            <option value="walk" selected>À pied</option>
+            <option value="bike">Vélo</option>
+          </select>
+        </label>
+        <label>Curseur rapide ↔ intéressant
+          <input type="range" id="interest" min="0" max="1" step="0.05" value="0.6" />
+          <span id="interestLabel">Équilibré</span>
+        </label>
+        <label>Détour maximal autorisé
+          <input type="range" id="maxDetour" min="0.05" max="0.5" step="0.05" value="0.25" />
+          <span id="detourLabel">+25 %</span>
+        </label>
+        <fieldset>
+          <legend>Catégories de POI</legend>
+          <label class="cat"><input type="checkbox" name="cat" value="monument" checked /> Monuments</label>
+          <label class="cat"><input type="checkbox" name="cat" value="architecture" checked /> Architecture</label>
+          <label class="cat"><input type="checkbox" name="cat" value="street_art" checked /> Street art</label>
+          <label class="cat"><input type="checkbox" name="cat" value="nature" checked /> Nature</label>
+          <label class="cat"><input type="checkbox" name="cat" value="viewpoint" checked /> Points de vue</label>
+        </fieldset>
+        <button type="submit">Générer l'itinéraire</button>
+      </form>
+      <section id="profile" hidden>
+        <h2>Profil du parcours</h2>
+        <ul id="stats"></ul>
+        <h2>POI rencontrés</h2>
+        <ol id="poiList"></ol>
+      </section>
+    </aside>
+    <div id="map"></div>
+  </main>
+  <footer>
+    <p id="attribution">Carte et données © OpenStreetMap contributors (ODbL) · Descriptions Wikipédia/Wikidata (CC BY-SA) · Photos Wikimedia Commons</p>
+  </footer>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

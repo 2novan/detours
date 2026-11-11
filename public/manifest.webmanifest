@@ -1,0 +1,10 @@
+{
+  "name": "Détours — Le trajet devient la visite",
+  "short_name": "Détours",
+  "description": "Itinéraires touristiques enrichis : le trajet devient la visite.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#b3541e",
+  "icons": []
+}

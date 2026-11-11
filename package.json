@@ -1,0 +1,11 @@
+{
+  "name": "detours",
+  "version": "0.1.0",
+  "description": "Le trajet devient la visite — itinéraires touristiques enrichis",
+  "type": "module",
+  "main": "src/engine.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

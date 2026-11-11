@@ -1,0 +1,57 @@
+# Détours — « Le trajet devient la visite »
+
+Appli d'itinéraires qui inverse la logique des Maps classiques : au lieu du trajet le plus court, elle propose un trajet légèrement plus long mais plus intéressant, traversant des points d'intérêt (monuments, architecture, street art, nature, points de vue).
+
+## État actuel — Prototype Phase 1
+
+- Moteur de routage pondéré en JS pur (`src/engine.js`), testable sous Node et réutilisable dans le navigateur.
+- Une ville = un fichier de données : `data/cities/paris.json` (24 POI). Ajouter une ville = ajouter un fichier JSON, **aucun changement de code**.
+- PWA légère (`public/`) : carte MapLibre GL + tuiles vectorielles OpenFreeMap, saisie A/B, curseur « rapide ↔ intéressant », plafond de détour, filtres de catégories, profil du parcours (distance, durée, détour, score intérêt/détour) et fiches POI.
+- Attribution OSM/ODbL, Wikipédia/Wikidata et Wikimedia Commons intégrée dès la conception.
+
+## Lancer
+
+```bash
+node server.mjs          # http://127.0.0.1:8080
+npm test                 # tests du moteur de routage
+```
+
+## Logique d'optimisation (implémentée)
+
+1. **Filtrage** des POI par ville et catégories choisies.
+2. **Sélection de pivots** (2 à 6 selon la position du curseur) par ratio intérêt/coût, où le coût = détour à vol d'oiseau + pénalité propre au POI ; un budget de détour (plafond × distance directe) borne la sélection, et un seuil de proximité évite les POI redondants.
+3. **Ordonnancement** des pivots par heuristique 2-opt (shortest path avec passages).
+4. **Contrainte de détour maximal** : l'itinéraire ne dépasse jamais le plafond choisi (testé).
+5. **Score affiché** : intérêt total par kilomètre, rapporté au détour, pour rendre l'arbitrage lisible.
+
+## Limites connues du prototype (roadmap)
+
+- Segments à vol d'oiseau : le prototype ne suit pas encore le graphe de rues OSM. Étape suivante : brancher OSRM/Valhalla (penalty par arête modulée par la densité de POI du secteur).
+- Géocodage : résolution par nom de POI connu ou coordonnées « lat, lon » ; Nominatim à brancher.
+- Photos : un seul POI a une image Commons ; pipeline d'enrichissement Wikidata/Commons à construire.
+- v2 : flânerie, guidage pas à pas, hors-ligne partiel. v3 : contenus communautaires, itinéraires thématiques.
+
+## Ajouter une ville
+
+Créer `data/cities/<id>.json` :
+
+```json
+{
+  "id": "lyon",
+  "name": "Lyon",
+  "center": { "lat": 45.7640, "lon": 4.8357 },
+  "defaultZoom": 13,
+  "attribution": "...",
+  "pois": [
+    { "id": "...", "city": "lyon", "name": "...", "category": "monument",
+      "lat": 0, "lon": 0, "interest": 0.8, "detourPenalty": 0.02,
+      "description": "Une phrase.", "image": null }
+  ]
+}
+```
+
+Catégories supportées : `monument`, `architecture`, `street_art`, `nature`, `viewpoint`.
+
+## Licences
+
+Cartes et données © OpenStreetMap contributors (ODbL). Descriptions issues de Wikipédia/Wikidata (CC BY-SA). Photos Wikimedia Commons.

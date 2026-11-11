@@ -1,0 +1,24 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #faf7f2; color: #2b2118; }
+header { padding: 12px 20px; background: #2a6f4e; color: #fff; display: flex; align-items: baseline; gap: 12px; }
+header h1 { margin: 0; font-size: 1.4rem; }
+.tagline { margin: 0; font-style: italic; opacity: 0.9; }
+main { display: flex; height: calc(100vh - 92px); }
+#panel { width: 360px; overflow-y: auto; padding: 16px; }
+#map { flex: 1; }
+label { display: block; margin: 12px 0; font-weight: 600; }
+input[type="text"], input:not([type]), select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #c8bfae; border-radius: 6px; }
+input[type="range"] { width: 100%; }
+fieldset { border: 1px solid #c8bfae; border-radius: 6px; margin: 12px 0; }
+.cat { font-weight: 400; margin: 4px 0; }
+button { width: 100%; padding: 10px; background: #b3541e; color: #fff; border: 0; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+button:hover { background: #96431a; }
+.poi-card { border: 1px solid #e0d8c8; border-radius: 8px; padding: 10px; margin: 8px 0; background: #fff; }
+.poi-card img { width: 100%; height: 130px; object-fit: cover; border-radius: 6px; }
+.poi-card h3 { margin: 6px 0 2px; font-size: 1rem; }
+footer { padding: 6px 20px; font-size: 0.75rem; background: #f0ebe0; }
+@media (max-width: 720px) {
+  main { flex-direction: column; height: auto; }
+  #panel { width: 100%; }
+  #map { height: 50vh; }
+}
