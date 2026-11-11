@@ -13,6 +13,9 @@ fieldset { border: 1px solid #c8bfae; border-radius: 6px; margin: 12px 0; }
 .cat { font-weight: 400; margin: 4px 0; }
 button { width: 100%; padding: 10px; background: #b3541e; color: #fff; border: 0; border-radius: 6px; font-size: 1rem; cursor: pointer; }
 button:hover { background: #96431a; }
+.poi-marker { width: 26px; height: 26px; border-radius: 50%; background: #2a6f4e; color: #fff; border: 2px solid #fff; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.4); padding: 0; }
+.poi-marker:hover { background: #1d5239; }
+.poi-card.active { outline: 3px solid #b3541e; }
 .hint { background: #fdf3e3; border: 1px solid #e8c98a; border-radius: 6px; padding: 8px; list-style: none; }
 .poi-card { border: 1px solid #e0d8c8; border-radius: 8px; padding: 10px; margin: 8px 0; background: #fff; cursor: pointer; }
 .poi-card img { width: 100%; height: 130px; object-fit: cover; border-radius: 6px; }

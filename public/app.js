@@ -1,6 +1,8 @@
 import { CATEGORIES } from '../src/engine.js';
 import { planRoute } from '../src/router.js';
 
+let markers = [];
+
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/liberty',
@@ -75,24 +77,22 @@ function render(route) {
     map.addLayer({ id: 'direct-line', type: 'line', source: 'direct', paint: { 'line-color': '#999', 'line-dasharray': [2, 3], 'line-width': 2 } });
     map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#b3541e', 'line-width': 4 } });
   }
-  const poiData = poiFeatureCollection(route.pois);
-  if (map.getSource('route-pois')) {
-    map.getSource('route-pois').setData(poiData);
-  } else {
-    map.addSource('route-pois', { type: 'geojson', data: poiData });
-    map.addLayer({ id: 'poi-points', type: 'circle', source: 'route-pois', paint: { 'circle-color': '#2a6f4e', 'circle-radius': 7, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
-    map.addLayer({
-      id: 'poi-labels', type: 'symbol', source: 'route-pois',
-      layout: { 'text-field': ['get', 'rank'], 'text-size': 11, 'text-offset': [0, 0.05], 'text-anchor': 'center' },
-      paint: { 'text-color': '#fff' }
+  markers.forEach((m) => m.remove());
+  markers = route.pois.map((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'poi-marker';
+    btn.textContent = i + 1;
+    btn.title = p.name;
+    btn.addEventListener('click', () => {
+      const card = el('poiList').querySelector(`.poi-card[data-rank="${i + 1}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        card.classList.add('active');
+        setTimeout(() => card.classList.remove('active'), 1500);
+      }
     });
-    map.on('click', 'poi-points', (e) => {
-      const f = e.features[0];
-      new maplibregl.Popup().setLngLat(f.geometry.coordinates)
-        .setHTML(`<strong>${f.properties.name}</strong><p>${f.properties.description}</p>`)
-        .addTo(map);
-    });
-  }
+    return new maplibregl.Marker({ element: btn }).setLngLat([p.lon, p.lat]).addTo(map);
+  });
 
   const bounds = line.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(line[0], line[0]));
   map.fitBounds(bounds, { padding: 60 });
@@ -115,7 +115,7 @@ function render(route) {
     <li class="hint"><strong>Aucun POI sur ce trajet.</strong><br />Essayez d'autres catégories ou un itinéraire plus long.</li>`;
   }
   el('poiList').innerHTML = route.pois.map((p, i) => `
-    <li class="poi-card" data-lat="${p.lat}" data-lon="${p.lon}">
+    <li class="poi-card" data-rank="${i + 1}" data-lat="${p.lat}" data-lon="${p.lon}">
       ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" />` : ''}
       <h3>${i + 1}. ${p.name}</h3>
       <p class="cat-${p.category}">${p.category}</p>
@@ -128,13 +128,3 @@ function render(route) {
   });
 }
 
-function poiFeatureCollection(pois) {
-  return {
-    type: 'FeatureCollection',
-    features: pois.map((p, i) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
-      properties: { rank: i + 1, name: p.name, description: p.description }
-    }))
-  };
-}
