@@ -21,7 +21,10 @@ const server = createServer(async (req, res) => {
     if (!file.startsWith(ROOT) && !file.startsWith(DATA) && !file.startsWith(SRC)) throw new Error('forbidden');
     try { if ((await stat(file)).isDirectory()) file = join(file, 'index.html'); } catch {}
     const data = await readFile(file);
-    res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'application/octet-stream' });
+    res.writeHead(200, {
+      'Content-Type': MIME[extname(file)] || 'application/octet-stream',
+      'Cache-Control': 'no-cache'
+    });
     res.end(data);
   } catch {
     res.writeHead(404); res.end('Not found');

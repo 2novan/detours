@@ -3,6 +3,35 @@ import { haversine } from './geo.js';
 import { osrmRoute } from './router.js';
 
 
+function bearing(from, to) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const y = Math.sin(toRad(to.lon - from.lon)) * Math.cos(toRad(to.lat));
+  const x =
+    Math.cos(toRad(from.lat)) * Math.sin(toRad(to.lat)) -
+    Math.sin(toRad(from.lat)) * Math.cos(toRad(to.lat)) * Math.cos(toRad(to.lon - from.lon));
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+const SECTOR_LABELS = ['vers le nord', "vers l'est / sud-est", "vers l'ouest / sud-ouest"];
+
+export async function planWanderVariants(start, pois, options = {}, deps = {}) {
+  const speed = options.speed ?? 1.35;
+  const budget = (options.duration ?? 3 * 3600) * speed;
+  const eligible = filterPois(pois, options.categories ?? CATEGORIES, options.city ?? pois[0]?.city)
+    .filter((p) => haversine(start, p) >= 150 && haversine(start, p) <= budget / 2);
+  const sectors = [[], [], []];
+  for (const p of eligible) {
+    sectors[Math.floor(((bearing(start, p) + 60) % 360) / 120)].push(p);
+  }
+  const variants = [];
+  for (let s = 0; s < 3; s++) {
+    if (sectors[s].length === 0) continue;
+    const route = await planWander(start, sectors[s], options, deps);
+    if (route.pois.length > 0) variants.push({ ...route, label: SECTOR_LABELS[s] });
+  }
+  return variants.sort((a, b) => b.pois.length - a.pois.length);
+}
+
 export async function planWander(start, pois, options = {}, deps = {}) {
   const route = deps.osrmRoute ?? osrmRoute;
   const speed = options.speed ?? 1.35;

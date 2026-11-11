@@ -16,6 +16,9 @@ button:hover { background: #96431a; }
 .poi-marker { width: 26px; height: 26px; border-radius: 50%; background: #2a6f4e; color: #fff; border: 2px solid #fff; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.4); padding: 0; }
 .poi-marker:hover { background: #1d5239; }
 .poi-card.active { outline: 3px solid #b3541e; }
+.variant { width: 100%; text-align: left; background: #fff; color: #2b2118; border: 1px solid #c8bfae; margin: 6px 0; font-weight: 400; line-height: 1.4; }
+.variant.selected { border-color: #b3541e; background: #fdf3e3; }
+.variant strong { font-weight: 700; }
 .wiki { display: inline-block; margin-top: 6px; color: #2a6f4e; font-weight: 600; text-decoration: none; }
 .wiki:hover { text-decoration: underline; }
 .hint { background: #fdf3e3; border: 1px solid #e8c98a; border-radius: 6px; padding: 8px; list-style: none; }

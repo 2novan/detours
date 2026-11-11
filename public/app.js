@@ -1,6 +1,6 @@
 import { CATEGORIES } from '../src/engine.js';
 import { planRoute } from '../src/router.js';
-import { planWander } from '../src/wander.js';
+import { planWanderVariants } from '../src/wander.js';
 
 let markers = [];
 
@@ -66,12 +66,18 @@ async function onSubmit(e) {
       speed,
       categories: categories.length ? categories : CATEGORIES
     };
-    const route = mode === 'wander'
-      ? await planWander(start, pois, {
-          ...common,
-          duration: parseFloat(el('duration').value) * 3600
-        })
-      : await planRoute(start, end, pois, {
+    if (mode === 'wander') {
+      const variants = await planWanderVariants(start, pois, {
+        ...common,
+        duration: parseFloat(el('duration').value) * 3600
+      });
+      if (variants.length === 0) throw new Error('Aucune boucle trouvée depuis ce point — essayez une autre catégorie ou un départ plus central.');
+      renderVariants(variants);
+      render(variants[0]);
+      return;
+    }
+    el('variants').hidden = true;
+    const route = await planRoute(start, end, pois, {
           ...common,
           interest: parseFloat(el('interest').value),
           maxDetour: parseFloat(el('maxDetour').value)
@@ -84,6 +90,23 @@ async function onSubmit(e) {
     button.disabled = false;
     button.textContent = "Générer l'itinéraire";
   }
+}
+
+function renderVariants(variants) {
+  el('variants').hidden = false;
+  el('variantList').innerHTML = '';
+  variants.forEach((v, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'variant' + (i === 0 ? ' selected' : '');
+    btn.innerHTML = `<strong>${v.label}</strong><br />${v.pois.length} POI · ${(v.distance / 1000).toFixed(1)} km · ${Math.round(v.duration / 60)} min`;
+    btn.addEventListener('click', () => {
+      el('variantList').querySelectorAll('.variant').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      render(v);
+    });
+    el('variantList').appendChild(btn);
+  });
 }
 
 function render(route) {

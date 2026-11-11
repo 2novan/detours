@@ -36,3 +36,16 @@ test('rien ne rentre : renvoie la plus petite boucle possible avec un avertissem
   assert.equal(route.overBudget, true);
   assert.equal(route.pois.length, 1);
 });
+
+test('variantes de flânerie : une boucle par secteur géographique', async () => {
+  const { planWanderVariants } = await import('../src/wander.js');
+  const spread = [
+    { id: 'n', city: 'paris', category: 'monument', lat: 48.870, lon: 2.347, interest: 0.8, detourPenalty: 0.02 },
+    { id: 'e', city: 'paris', category: 'nature', lat: 48.858, lon: 2.367, interest: 0.7, detourPenalty: 0.02 },
+    { id: 'w', city: 'paris', category: 'viewpoint', lat: 48.858, lon: 2.327, interest: 0.6, detourPenalty: 0.02 }
+  ];
+  const variants = await planWanderVariants(start, spread, { duration: 3600, speed: 1.35 }, { osrmRoute: mockOsrm(1000) });
+  assert.ok(variants.length >= 2, 'au moins deux secteurs proposés');
+  assert.ok(variants.every((v) => v.label && v.loop && v.pois.length > 0));
+  assert.ok(variants.some((v) => v.label === 'vers le nord'));
+});
