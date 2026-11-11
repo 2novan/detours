@@ -25,6 +25,7 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
   }
   solo.sort((a, b) => a.added - b.added);
   const accepted = [];
+  const rejected = [];
   for (const { poi, added } of solo) {
     const efficiency = (poi.interest / Math.max(added, 1)) * 1000;
     if (added > 0 && efficiency < minEfficiency) continue;
@@ -37,9 +38,18 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
       }
     }
     if (best) accepted.splice(best.pos, 0, poi);
+    else rejected.push({ poi, added });
   }
   const final = accepted.length > 0 ? await route([start, ...accepted, end]) : direct;
-  return finalize(final, direct, accepted, options);
+  const result = finalize(final, direct, accepted, options);
+  if (accepted.length === 0 && rejected.length > 0) {
+    const cheapest = rejected.sort((a, b) => a.added - b.added)[0];
+    result.bestMissed = {
+      poi: cheapest.poi,
+      detour: cheapest.added / Math.max(direct.distance, 1)
+    };
+  }
+  return result;
 }
 
 function finalize(route, direct, pivots, options) {

@@ -104,6 +104,16 @@ function render(route) {
     <li><strong>Détour :</strong> +${Math.round(route.detour * 100)} %</li>
     <li><strong>POI :</strong> ${route.pois.length}</li>
     <li><strong>Score intérêt / détour :</strong> ${route.score.toFixed(2)}</li>`;
+  if (route.pois.length === 0 && route.bestMissed) {
+    const m = route.bestMissed;
+    el('stats').innerHTML += `
+    <li class="hint"><strong>Aucun POI dans le plafond de détour.</strong><br />
+    Le plus accessible : ${m.poi.name} (+${Math.round(m.detour * 100)} % de détour).<br />
+    Augmentez le curseur « Détour maximal » pour l'inclure.</li>`;
+  } else if (route.pois.length === 0) {
+    el('stats').innerHTML += `
+    <li class="hint"><strong>Aucun POI sur ce trajet.</strong><br />Essayez d'autres catégories ou un itinéraire plus long.</li>`;
+  }
   el('poiList').innerHTML = route.pois.map((p, i) => `
     <li class="poi-card" data-lat="${p.lat}" data-lon="${p.lon}">
       ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" />` : ''}

@@ -40,3 +40,10 @@ test('retombe sur le trajet direct si aucun POI ne rentre dans le budget', async
   assert.equal(route.pois.length, 0);
   assert.ok(route.detour <= 0.01);
 });
+
+test('signale le meilleur POI manquant quand le plafond de détour bloque tout', async () => {
+  const route = await planRoute(start, end, pois, { interest: 1, maxDetour: 0.1 }, { osrmRoute: mockOsrm((n) => (n === 2 ? 1 : 1.4)) });
+  assert.equal(route.pois.length, 0);
+  assert.ok(route.bestMissed, 'bestMissed est renseigné');
+  assert.ok(route.bestMissed.detour > 0.1, 'le POI manqué dépasse le plafond');
+});
