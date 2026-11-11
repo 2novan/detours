@@ -17,7 +17,9 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
   const budget = direct.distance * (1 + (options.maxDetour ?? 0.25));
 
   const candidates = rankPivots(pois, start, end, options).slice(0, 6);
+  const minEfficiency = 3 - 2.5 * (options.interest ?? 0.5);
   const accepted = [];
+  let currentDistance = direct.distance;
   for (const poi of candidates) {
     let best = null;
     for (let pos = 0; pos <= accepted.length; pos++) {
@@ -27,7 +29,12 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
         best = { distance: attempt.distance, pos, geometry: attempt.geometry };
       }
     }
-    if (best) accepted.splice(best.pos, 0, poi);
+    if (!best) continue;
+    const added = best.distance - currentDistance;
+    const efficiency = (poi.interest / Math.max(added, 1)) * 1000;
+    if (added > 0 && efficiency < minEfficiency) continue;
+    accepted.splice(best.pos, 0, poi);
+    currentDistance = best.distance;
   }
   const final = accepted.length > 0 ? await route([start, ...accepted, end]) : direct;
   return finalize(final, direct, accepted, options);
