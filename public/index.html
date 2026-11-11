@@ -18,11 +18,21 @@
     <aside id="panel">
       <form id="form">
         <label>Point A <input id="start" required placeholder="Ex : Tour Eiffel ou 48.8584, 2.2945" /></label>
-        <label>Point B <input id="end" required placeholder="Ex : Notre-Dame ou 48.8530, 2.3499" /></label>
+        <label id="endLabel">Point B <input id="end" required placeholder="Ex : Notre-Dame ou 48.8530, 2.3499" /></label>
         <label>Mode
           <select id="mode">
-            <option value="walk" selected>À pied</option>
-            <option value="bike">Vélo</option>
+            <option value="walk" selected>À pied (A → B)</option>
+            <option value="bike">Vélo (A → B)</option>
+            <option value="wander">Flânerie (boucle, pas de destination)</option>
+          </select>
+        </label>
+        <label id="durationLabel" hidden>Durée souhaitée
+          <select id="duration">
+            <option value="1">1 heure</option>
+            <option value="2">2 heures</option>
+            <option value="3" selected>3 heures</option>
+            <option value="4">4 heures</option>
+            <option value="5">5 heures</option>
           </select>
         </label>
         <label>Curseur rapide ↔ intéressant

@@ -24,6 +24,14 @@ npm test                 # tests du moteur de routage
 4. **Contrainte de détour maximal** : l'itinéraire ne dépasse jamais le plafond choisi (testé).
 5. **Score affiché** : intérêt total par kilomètre, rapporté au détour, pour rendre l'arbitrage lisible.
 
+## Mode flânerie (boucle)
+
+Pas de destination : un point de départ, une durée souhaitée, et une boucle qui maximise les POI vus (`src/wander.js`). Budget distance = durée × vitesse ; insertion gloutonne des POI proches du départ (la boucle se construit en grappe), puis seconde passe par importance décroissante pour les POI plus lointains. Exemples réels (OSRM) : 3 h depuis la Tour Eiffel → 8 POI / 14 km ; 3 h depuis l'Hôtel de Ville → 12 POI / 15 km (cluster Marais).
+
+## Fiches POI
+
+Chaque POI porte un lien vers sa page Wikipédia (39/40 POI Paris) pour aller plus loin que la phrase de description.
+
 ## Routage rue par rue
 
 La géométrie et les distances réelles viennent de l'API publique OSRM (`router.project-osrm.org`, profil `driving` du serveur démo : bonne approximation piétonne en milieu urbain dense, à remplacer par un profil `foot` self-hosted en phase 2). Le planificateur (`src/router.js`) :

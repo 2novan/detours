@@ -1,5 +1,6 @@
 import { CATEGORIES } from '../src/engine.js';
 import { planRoute } from '../src/router.js';
+import { planWander } from '../src/wander.js';
 
 let markers = [];
 
@@ -25,6 +26,12 @@ el('interest').addEventListener('input', (e) => {
 el('maxDetour').addEventListener('input', (e) => {
   el('detourLabel').textContent = `+${Math.round(parseFloat(e.target.value) * 100)} %`;
 });
+el('mode').addEventListener('change', (e) => {
+  const wander = e.target.value === 'wander';
+  el('endLabel').hidden = wander;
+  el('durationLabel').hidden = !wander;
+  el('end').required = !wander;
+});
 
 function setLine(id, coordinates) {
   const data = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
@@ -43,22 +50,32 @@ function resolvePlace(input) {
 
 async function onSubmit(e) {
   e.preventDefault();
+  const mode = el('mode').value;
   const start = resolvePlace(el('start').value);
-  const end = resolvePlace(el('end').value);
+  const end = mode === 'wander' ? null : resolvePlace(el('end').value);
   const msg = 'Point introuvable. Utilisez un nom de POI connu ou des coordonnées "lat, lon".';
-  if (!start || !end) return void alert(msg);
+  if (!start || (mode !== 'wander' && !end)) return void alert(msg);
   const categories = [...document.querySelectorAll('input[name="cat"]:checked')].map((c) => c.value);
   if (categories.length === 0) return void alert('Choisissez au moins une catégorie de POI.');
+  const speed = mode === 'bike' ? speeds.bike : speeds.walk;
   const button = e.submitter ?? e.target.querySelector('button');
   button.disabled = true;
   button.textContent = 'Calcul…';
   try {
-    const route = await planRoute(start, end, pois, {
-      interest: parseFloat(el('interest').value),
-      maxDetour: parseFloat(el('maxDetour').value),
-      speed: speeds[el('mode').value],
+    const common = {
+      speed,
       categories: categories.length ? categories : CATEGORIES
-    });
+    };
+    const route = mode === 'wander'
+      ? await planWander(start, pois, {
+          ...common,
+          duration: parseFloat(el('duration').value) * 3600
+        })
+      : await planRoute(start, end, pois, {
+          ...common,
+          interest: parseFloat(el('interest').value),
+          maxDetour: parseFloat(el('maxDetour').value)
+        });
     render(route);
   } catch (err) {
     console.error(err);
@@ -72,7 +89,7 @@ async function onSubmit(e) {
 function render(route) {
   const line = route.geometry.map((p) => [p.lon, p.lat]);
   setLine('route', line);
-  setLine('direct', [line[0], line.at(-1)]);
+  if (!route.loop) setLine('direct', [line[0], line.at(-1)]);
   if (!map.getLayer('direct-line')) {
     map.addLayer({ id: 'direct-line', type: 'line', source: 'direct', paint: { 'line-color': '#999', 'line-dasharray': [2, 3], 'line-width': 2 } });
     map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#b3541e', 'line-width': 4 } });
@@ -104,6 +121,14 @@ function render(route) {
     <li><strong>Détour :</strong> +${Math.round(route.detour * 100)} %</li>
     <li><strong>POI :</strong> ${route.pois.length}</li>
     <li><strong>Score intérêt / détour :</strong> ${route.score.toFixed(2)}</li>`;
+  if (route.loop) {
+    el('stats').innerHTML += `
+    <li><strong>Type :</strong> boucle depuis votre point de départ</li>`;
+    if (route.overBudget) {
+      el('stats').innerHTML += `
+      <li class="hint"><strong>Durée dépassée.</strong><br />La boucle la plus courte possible dépasse la durée demandée : réduisez le nombre de catégories ou choisissez un départ plus central.</li>`;
+    }
+  }
   if (route.pois.length === 0 && route.bestMissed) {
     const m = route.bestMissed;
     el('stats').innerHTML += `
@@ -120,6 +145,7 @@ function render(route) {
       <h3>${i + 1}. ${p.name}</h3>
       <p class="cat-${p.category}">${p.category}</p>
       <p>${p.description}</p>
+      ${p.wikipedia ? `<a class="wiki" href="${p.wikipedia}" target="_blank" rel="noopener">En savoir plus — Wikipédia ↗</a>` : ''}
     </li>`).join('');
   el('poiList').querySelectorAll('.poi-card').forEach((card) => {
     card.addEventListener('click', () => {
