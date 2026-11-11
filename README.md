@@ -24,9 +24,17 @@ npm test                 # tests du moteur de routage
 4. **Contrainte de détour maximal** : l'itinéraire ne dépasse jamais le plafond choisi (testé).
 5. **Score affiché** : intérêt total par kilomètre, rapporté au détour, pour rendre l'arbitrage lisible.
 
+## Routage rue par rue
+
+La géométrie et les distances réelles viennent de l'API publique OSRM (`router.project-osrm.org`, profil `driving` du serveur démo : bonne approximation piétonne en milieu urbain dense, à remplacer par un profil `foot` self-hosted en phase 2). Le planificateur (`src/router.js`) :
+
+1. Mesure le trajet direct réel (distance OSRM, plus fidèle que le vol d'oiseau).
+2. Pré-sélectionne les pivots avec le moteur pondéré, puis demande la route rue par rue via les POI.
+3. Si le détour réel dépasse le plafond, retire le POI le moins intéressant et réessaie, jusqu'au trajet direct en dernier recours.
+
 ## Limites connues du prototype (roadmap)
 
-- Segments à vol d'oiseau : le prototype ne suit pas encore le graphe de rues OSM. Étape suivante : brancher OSRM/Valhalla (penalty par arête modulée par la densité de POI du secteur).
+- Profil OSRM démo = voiture ; self-host avec profils `foot`/`bike` à prévoir, ainsi que la pénalité par arête modulée par la densité de POI du secteur.
 - Géocodage : résolution par nom de POI connu ou coordonnées « lat, lon » ; Nominatim à brancher.
 - Photos : un seul POI a une image Commons ; pipeline d'enrichissement Wikidata/Commons à construire.
 - v2 : flânerie, guidage pas à pas, hors-ligne partiel. v3 : contenus communautaires, itinéraires thématiques.

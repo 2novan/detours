@@ -1,5 +1,5 @@
-import { buildRoute } from '../src/engine.js';
 import { CATEGORIES } from '../src/engine.js';
+import { planRoute } from '../src/router.js';
 
 const map = new maplibregl.Map({
   container: 'map',
@@ -47,20 +47,30 @@ async function onSubmit(e) {
   if (!start || !end) return void alert(msg);
   const categories = [...document.querySelectorAll('input[name="cat"]:checked')].map((c) => c.value);
   if (categories.length === 0) return void alert('Choisissez au moins une catégorie de POI.');
-  const route = buildRoute(start, end, pois, {
-    interest: parseFloat(el('interest').value),
-    maxDetour: parseFloat(el('maxDetour').value),
-    speed: speeds[el('mode').value],
-    categories: categories.length ? categories : CATEGORIES
-  });
-  render(route);
+  const button = e.submitter ?? e.target.querySelector('button');
+  button.disabled = true;
+  button.textContent = 'Calcul…';
+  try {
+    const route = await planRoute(start, end, pois, {
+      interest: parseFloat(el('interest').value),
+      maxDetour: parseFloat(el('maxDetour').value),
+      speed: speeds[el('mode').value],
+      categories: categories.length ? categories : CATEGORIES
+    });
+    render(route);
+  } catch (err) {
+    console.error(err);
+    alert('Erreur de routage : ' + err.message + '\nVérifiez votre connexion (le routage utilise le serveur public OSRM).');
+  } finally {
+    button.disabled = false;
+    button.textContent = "Générer l'itinéraire";
+  }
 }
 
 function render(route) {
-  const line = route.points.map((p) => [p.lon, p.lat]);
-  const direct = [line[0], line.at(-1)];
+  const line = route.geometry.map((p) => [p.lon, p.lat]);
   setLine('route', line);
-  setLine('direct', direct);
+  setLine('direct', [line[0], line.at(-1)]);
   if (!map.getLayer('direct-line')) {
     map.addLayer({ id: 'direct-line', type: 'line', source: 'direct', paint: { 'line-color': '#999', 'line-dasharray': [2, 3], 'line-width': 2 } });
     map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#b3541e', 'line-width': 4 } });
