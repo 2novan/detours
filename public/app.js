@@ -2,98 +2,123 @@ import { CATEGORIES } from '../src/engine.js';
 import { planRoute } from '../src/router.js';
 import { planWanderVariants } from '../src/wander.js';
 
-let markers = [];
-
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/liberty',
   center: [2.3522, 48.8566],
-  zoom: 13,
+  zoom: 12,
   attributionControl: { compact: true }
 });
 
-const city = await (await fetch('/data/cities/paris.json')).json();
-const pois = city.pois;
+let markers = [];
+let state = { city: null, pois: [] };
 const speeds = { walk: 1.35, bike: 4.2 };
 
 const el = (id) => document.getElementById(id);
-const interestLabel = el('interestLabel');
-el('form').addEventListener('submit', onSubmit);
-el('interest').addEventListener('input', (e) => {
-  const v = parseFloat(e.target.value);
-  interestLabel.textContent = v < 0.25 ? 'Rapide' : v < 0.5 ? 'Plutôt rapide' : v < 0.75 ? 'Équilibré' : 'Intéressant';
-});
-el('maxDetour').addEventListener('input', (e) => {
-  el('detourLabel').textContent = `+${Math.round(parseFloat(e.target.value) * 100)} %`;
-});
-el('mode').addEventListener('change', (e) => {
-  const wander = e.target.value === 'wander';
-  el('endLabel').hidden = wander;
-  el('durationLabel').hidden = !wander;
-  el('end').required = !wander;
-});
+const showScreen = (id) => {
+  document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== id; });
+};
 
-function setLine(id, coordinates) {
-  const data = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
-  if (map.getSource(id)) map.getSource(id).setData(data);
-  else map.addSource(id, { type: 'geojson', data });
+async function loadCities() {
+  const cities = await (await fetch('/api/cities')).json();
+  el('cityList').innerHTML = '';
+  cities.forEach((c) => {
+    const btn = document.createElement('button');
+    btn.className = 'big';
+    btn.innerHTML = `<strong>${c.name}</strong><br /><span>${c.poiCount} POI · flânerie et itinéraires enrichis</span>`;
+    btn.addEventListener('click', () => selectCity(c.id));
+    el('cityList').appendChild(btn);
+  });
+}
+
+async function selectCity(id) {
+  const data = await (await fetch(`/data/cities/${id}.json`)).json();
+  state = { city: data, pois: data.pois };
+  map.flyTo({ center: [data.center.lon, data.center.lat], zoom: data.defaultZoom ?? 13 });
+  el('cityName').textContent = data.name;
+  el('wanderCityName').textContent = data.name;
+  el('routeCityName').textContent = data.name;
+  clearResults();
+  showScreen('screen-mode');
 }
 
 function resolvePlace(input) {
   const coords = input.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
   if (coords) return { lat: parseFloat(coords[1]), lon: parseFloat(coords[2]) };
   const needle = input.trim().toLowerCase();
-  const poi = pois.find((p) => p.name.toLowerCase().includes(needle));
-  if (poi) return { lat: poi.lat, lon: poi.lon };
-  return null;
+  const poi = state.pois.find((p) => p.name.toLowerCase().includes(needle));
+  return poi ? { lat: poi.lat, lon: poi.lon } : null;
 }
 
-async function onSubmit(e) {
-  e.preventDefault();
-  const mode = el('mode').value;
-  const start = resolvePlace(el('start').value);
-  const end = mode === 'wander' ? null : resolvePlace(el('end').value);
-  const msg = 'Point introuvable. Utilisez un nom de POI connu ou des coordonnées "lat, lon".';
-  if (!start || (mode !== 'wander' && !end)) return void alert(msg);
-  const categories = [...document.querySelectorAll('input[name="cat"]:checked')].map((c) => c.value);
-  if (categories.length === 0) return void alert('Choisissez au moins une catégorie de POI.');
-  const speed = mode === 'bike' ? speeds.bike : speeds.walk;
-  const button = e.submitter ?? e.target.querySelector('button');
+function checkedCategories(name) {
+  const cats = [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((c) => c.value);
+  return cats.length ? cats : CATEGORIES;
+}
+
+el('backToCities').addEventListener('click', () => showScreen('screen-city'));
+document.querySelectorAll('#screen-mode .big').forEach((btn) => {
+  btn.addEventListener('click', () => showScreen(btn.dataset.mode === 'wander' ? 'screen-wander' : 'screen-route'));
+});
+document.querySelectorAll('.back').forEach((btn) => {
+  btn.addEventListener('click', () => showScreen('screen-mode'));
+});
+
+el('interest').addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  el('interestLabel').textContent = v < 0.25 ? 'Rapide' : v < 0.5 ? 'Plutôt rapide' : v < 0.75 ? 'Équilibré' : 'Intéressant';
+});
+el('maxDetour').addEventListener('input', (e) => {
+  el('detourLabel').textContent = `+${Math.round(parseFloat(e.target.value) * 100)} %`;
+});
+
+async function withBusy(button, fn) {
+  const label = button.textContent;
   button.disabled = true;
   button.textContent = 'Calcul…';
   try {
-    const common = {
-      speed,
-      categories: categories.length ? categories : CATEGORIES
-    };
-    if (mode === 'wander') {
-      const variants = await planWanderVariants(start, pois, {
-        ...common,
-        duration: parseFloat(el('duration').value) * 3600
-      });
-      if (variants.length === 0) throw new Error('Aucune boucle trouvée depuis ce point — essayez une autre catégorie ou un départ plus central.');
-      renderVariants(variants);
-      render(variants[0]);
-      return;
-    }
-    el('variants').hidden = true;
-    const route = await planRoute(start, end, pois, {
-          ...common,
-          interest: parseFloat(el('interest').value),
-          maxDetour: parseFloat(el('maxDetour').value)
-        });
-    render(route);
+    await fn();
   } catch (err) {
     console.error(err);
-    alert('Erreur de routage : ' + err.message + '\nVérifiez votre connexion (le routage utilise le serveur public OSRM).');
+    alert('Erreur : ' + err.message);
   } finally {
     button.disabled = false;
-    button.textContent = "Générer l'itinéraire";
+    button.textContent = label;
   }
 }
 
+el('wanderGo').addEventListener('click', () => withBusy(el('wanderGo'), async () => {
+  const start = resolvePlace(el('wanderStart').value);
+  if (!start) throw new Error('Point de départ introuvable. Utilisez un nom de POI connu ou des coordonnées "lat, lon".');
+  const variants = await planWanderVariants(start, state.pois, {
+    duration: parseFloat(el('duration').value) * 3600,
+    speed: speeds.walk,
+    categories: checkedCategories('wcat'),
+    city: state.city?.id
+  });
+  if (variants.length === 0) {
+    throw new Error('Aucune boucle trouvée depuis ce point — essayez d\'autres catégories ou un départ plus central.');
+  }
+  renderVariants(variants);
+  renderWander(variants[0]);
+}));
+
+el('routeGo').addEventListener('click', () => withBusy(el('routeGo'), async () => {
+  const start = resolvePlace(el('start').value);
+  const end = resolvePlace(el('end').value);
+  if (!start || !end) throw new Error('Point A ou B introuvable. Utilisez un nom de POI connu ou des coordonnées "lat, lon".');
+  const route = await planRoute(start, end, state.pois, {
+    interest: parseFloat(el('interest').value),
+    maxDetour: parseFloat(el('maxDetour').value),
+    speed: speeds[el('mode').value],
+    categories: checkedCategories('cat'),
+    city: state.city?.id
+  });
+  el('routeResults').hidden = false;
+  renderRoute(route);
+}));
+
 function renderVariants(variants) {
-  el('variants').hidden = false;
+  el('wanderResults').hidden = false;
   el('variantList').innerHTML = '';
   variants.forEach((v, i) => {
     const btn = document.createElement('button');
@@ -103,13 +128,13 @@ function renderVariants(variants) {
     btn.addEventListener('click', () => {
       el('variantList').querySelectorAll('.variant').forEach((b) => b.classList.remove('selected'));
       btn.classList.add('selected');
-      render(v);
+      renderWander(v);
     });
     el('variantList').appendChild(btn);
   });
 }
 
-function render(route) {
+function drawRoute(route) {
   const line = route.geometry.map((p) => [p.lon, p.lat]);
   setLine('route', line);
   if (!route.loop) setLine('direct', [line[0], line.at(-1)]);
@@ -124,7 +149,7 @@ function render(route) {
     btn.textContent = i + 1;
     btn.title = p.name;
     btn.addEventListener('click', () => {
-      const card = el('poiList').querySelector(`.poi-card[data-rank="${i + 1}"]`);
+      const card = document.querySelector(`.poi-card[data-rank="${i + 1}"]`);
       if (card) {
         card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         card.classList.add('active');
@@ -133,25 +158,57 @@ function render(route) {
     });
     return new maplibregl.Marker({ element: btn }).setLngLat([p.lon, p.lat]).addTo(map);
   });
-
   const bounds = line.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(line[0], line[0]));
   map.fitBounds(bounds, { padding: 60 });
+}
 
-  el('profile').hidden = false;
+function setLine(id, coordinates) {
+  const data = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
+  if (map.getSource(id)) map.getSource(id).setData(data);
+  else map.addSource(id, { type: 'geojson', data });
+}
+
+function poiCardsHtml(pois) {
+  return pois.map((p, i) => `
+    <li class="poi-card" data-rank="${i + 1}" data-lat="${p.lat}" data-lon="${p.lon}">
+      ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" />` : ''}
+      <h3>${i + 1}. ${p.name}</h3>
+      <p class="cat-${p.category}">${p.category}</p>
+      <p>${p.description}</p>
+      ${p.wikipedia ? `<a class="wiki" href="${p.wikipedia}" target="_blank" rel="noopener">En savoir plus — Wikipédia ↗</a>` : ''}
+    </li>`).join('');
+}
+
+function attachCardNavigation(listId) {
+  document.querySelectorAll(`#${listId} .poi-card`).forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.wiki')) return;
+      map.flyTo({ center: [parseFloat(card.dataset.lon), parseFloat(card.dataset.lat)], zoom: 16 });
+    });
+  });
+}
+
+function renderWander(route) {
+  drawRoute(route);
+  el('wanderProfile').innerHTML = `
+    <ul>
+      <li><strong>Distance :</strong> ${(route.distance / 1000).toFixed(2)} km</li>
+      <li><strong>Durée estimée :</strong> ${Math.round(route.duration / 60)} min</li>
+      <li><strong>POI :</strong> ${route.pois.length}</li>
+      ${route.overBudget ? '<li class="hint"><strong>Durée dépassée.</strong><br />La boucle la plus courte possible dépasse la durée demandée.</li>' : ''}
+    </ul>`;
+  el('wanderPoiList').innerHTML = poiCardsHtml(route.pois);
+  attachCardNavigation('wanderPoiList');
+}
+
+function renderRoute(route) {
+  drawRoute(route);
   el('stats').innerHTML = `
     <li><strong>Distance :</strong> ${(route.distance / 1000).toFixed(2)} km (direct : ${(route.directDistance / 1000).toFixed(2)} km)</li>
     <li><strong>Durée estimée :</strong> ${Math.round(route.duration / 60)} min</li>
     <li><strong>Détour :</strong> +${Math.round(route.detour * 100)} %</li>
     <li><strong>POI :</strong> ${route.pois.length}</li>
     <li><strong>Score intérêt / détour :</strong> ${route.score.toFixed(2)}</li>`;
-  if (route.loop) {
-    el('stats').innerHTML += `
-    <li><strong>Type :</strong> boucle depuis votre point de départ</li>`;
-    if (route.overBudget) {
-      el('stats').innerHTML += `
-      <li class="hint"><strong>Durée dépassée.</strong><br />La boucle la plus courte possible dépasse la durée demandée : réduisez le nombre de catégories ou choisissez un départ plus central.</li>`;
-    }
-  }
   if (route.pois.length === 0 && route.bestMissed) {
     const m = route.bestMissed;
     el('stats').innerHTML += `
@@ -162,18 +219,15 @@ function render(route) {
     el('stats').innerHTML += `
     <li class="hint"><strong>Aucun POI sur ce trajet.</strong><br />Essayez d'autres catégories ou un itinéraire plus long.</li>`;
   }
-  el('poiList').innerHTML = route.pois.map((p, i) => `
-    <li class="poi-card" data-rank="${i + 1}" data-lat="${p.lat}" data-lon="${p.lon}">
-      ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" />` : ''}
-      <h3>${i + 1}. ${p.name}</h3>
-      <p class="cat-${p.category}">${p.category}</p>
-      <p>${p.description}</p>
-      ${p.wikipedia ? `<a class="wiki" href="${p.wikipedia}" target="_blank" rel="noopener">En savoir plus — Wikipédia ↗</a>` : ''}
-    </li>`).join('');
-  el('poiList').querySelectorAll('.poi-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      map.flyTo({ center: [parseFloat(card.dataset.lon), parseFloat(card.dataset.lat)], zoom: 16 });
-    });
-  });
+  el('poiList').innerHTML = poiCardsHtml(route.pois);
+  attachCardNavigation('poiList');
 }
 
+function clearResults() {
+  markers.forEach((m) => m.remove());
+  markers = [];
+  el('wanderResults').hidden = true;
+  el('routeResults').hidden = true;
+}
+
+loadCities();

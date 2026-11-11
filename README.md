@@ -9,6 +9,13 @@ Appli d'itinéraires qui inverse la logique des Maps classiques : au lieu du tra
 - PWA légère (`public/`) : carte MapLibre GL + tuiles vectorielles OpenFreeMap, saisie A/B, curseur « rapide ↔ intéressant », plafond de détour, filtres de catégories, profil du parcours (distance, durée, détour, score intérêt/détour) et fiches POI.
 - Attribution OSM/ODbL, Wikipédia/Wikidata et Wikimedia Commons intégrée dès la conception.
 
+## Parcours utilisateur
+
+1. **Écran ville** : les villes disponibles sont listées automatiquement (`/api/cities` lit `data/cities/`). Ajouter une ville = déposer un JSON, elle apparaît sans aucun changement de code.
+2. **Écran mode** : Flânerie (boucle) ou Itinéraire enrichi (A → B).
+3. **Flânerie** : durée souhaitée + catégories de POI, **puis** point de départ → trois boucles proposées par secteur géographique (nord / est / ouest), cliquables.
+4. **Itinéraire** : A, B, mode, curseur rapide↔intéressant, plafond de détour, catégories → tracé rue par rue + POI numérotés + fiches Wikipédia.
+
 ## Lancer
 
 ```bash

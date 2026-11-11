@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { readFile, readdir, stat } from 'node:fs/promises';
+import { extname, join } from 'node:path';
 
 const ROOT = new URL('./public/', import.meta.url).pathname;
 const DATA = new URL('./data/', import.meta.url).pathname;
@@ -13,6 +13,22 @@ const MIME = {
 };
 
 const server = createServer(async (req, res) => {
+  const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+  if (pathname === '/api/cities') {
+    try {
+      const citiesDir = join(DATA, 'cities');
+      const files = (await readdir(citiesDir)).filter((f) => f.endsWith('.json'));
+      const cities = await Promise.all(files.map(async (f) => {
+        const data = JSON.parse(await readFile(join(citiesDir, f), 'utf8'));
+        return { id: data.id, name: data.name, poiCount: data.pois?.length ?? 0 };
+      }));
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      return res.end(JSON.stringify(cities));
+    } catch (e) {
+      res.writeHead(500);
+      return res.end('cities error');
+    }
+  }
   try {
     let url = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     let file = join(ROOT, url === '/' ? 'index.html' : url);

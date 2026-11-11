@@ -16,23 +16,61 @@
   </header>
   <main>
     <aside id="panel">
-      <form id="form">
-        <label>Point A <input id="start" required placeholder="Ex : Tour Eiffel ou 48.8584, 2.2945" /></label>
-        <label id="endLabel">Point B <input id="end" required placeholder="Ex : Notre-Dame ou 48.8530, 2.3499" /></label>
-        <label>Mode
-          <select id="mode">
-            <option value="walk" selected>À pied (A → B)</option>
-            <option value="bike">Vélo (A → B)</option>
-            <option value="wander">Flânerie (boucle, pas de destination)</option>
-          </select>
-        </label>
-        <label id="durationLabel" hidden>Durée souhaitée
+
+      <section id="screen-city" class="screen">
+        <h2>Où voulez-vous flâner ?</h2>
+        <div id="cityList"></div>
+      </section>
+
+      <section id="screen-mode" class="screen" hidden>
+        <h2 id="cityName"></h2>
+        <p>Comment voulez-vous découvrir la ville ?</p>
+        <button class="big" data-mode="wander">🚶 Flânerie<br /><span>Une boucle selon le temps dont je dispose</span></button>
+        <button class="big" data-mode="route">🧭 Itinéraire enrichi<br /><span>De A à B, avec des POI sur le chemin</span></button>
+        <button class="link" id="backToCities">← Changer de ville</button>
+      </section>
+
+      <section id="screen-wander" class="screen" hidden>
+        <h2>Flânerie à <span id="wanderCityName"></span></h2>
+        <label>Durée souhaitée
           <select id="duration">
             <option value="1">1 heure</option>
             <option value="2">2 heures</option>
             <option value="3" selected>3 heures</option>
             <option value="4">4 heures</option>
             <option value="5">5 heures</option>
+          </select>
+        </label>
+        <fieldset>
+          <legend>Quelles catégories de POI voulez-vous voir ?</legend>
+          <label class="cat"><input type="checkbox" name="wcat" value="monument" checked /> Monuments</label>
+          <label class="cat"><input type="checkbox" name="wcat" value="architecture" checked /> Architecture</label>
+          <label class="cat"><input type="checkbox" name="wcat" value="street_art" checked /> Street art</label>
+          <label class="cat"><input type="checkbox" name="wcat" value="nature" checked /> Nature</label>
+          <label class="cat"><input type="checkbox" name="wcat" value="viewpoint" checked /> Points de vue</label>
+        </fieldset>
+        <label>Votre point de départ
+          <input id="wanderStart" placeholder="Ex : Châtelet ou 48.8584, 2.2945" />
+        </label>
+        <button id="wanderGo">Proposer des boucles</button>
+        <button class="link back">← Retour au choix du mode</button>
+        <div id="wanderResults" hidden>
+          <h3>Boucles proposées</h3>
+          <div id="variantList"></div>
+          <div id="wanderProfile"></div>
+          <h3>POI de la boucle</h3>
+          <ol id="wanderPoiList"></ol>
+        </div>
+      </section>
+
+      <section id="screen-route" class="screen" hidden>
+        <h2>Itinéraire enrichi à <span id="routeCityName"></span></h2>
+        <label>Point A <input id="start" placeholder="Ex : Tour Eiffel ou 48.8584, 2.2945" /></label>
+        <label>Point B <input id="end" placeholder="Ex : Notre-Dame ou 48.8530, 2.3499" /></label>
+        <label>Mode de déplacement
+          <select id="mode">
+            <option value="walk" selected>À pied</option>
+            <option value="bike">Vélo</option>
           </select>
         </label>
         <label>Curseur rapide ↔ intéressant
@@ -51,18 +89,16 @@
           <label class="cat"><input type="checkbox" name="cat" value="nature" checked /> Nature</label>
           <label class="cat"><input type="checkbox" name="cat" value="viewpoint" checked /> Points de vue</label>
         </fieldset>
-        <button type="submit">Générer l'itinéraire</button>
-      </form>
-      <section id="variants" hidden>
-        <h2>Boucles proposées</h2>
-        <div id="variantList"></div>
+        <button id="routeGo">Générer l'itinéraire</button>
+        <button class="link back">← Retour au choix du mode</button>
+        <div id="routeResults" hidden>
+          <h3>Profil du parcours</h3>
+          <ul id="stats"></ul>
+          <h3>POI rencontrés</h3>
+          <ol id="poiList"></ol>
+        </div>
       </section>
-      <section id="profile" hidden>
-        <h2>Profil du parcours</h2>
-        <ul id="stats"></ul>
-        <h2>POI rencontrés</h2>
-        <ol id="poiList"></ol>
-      </section>
+
     </aside>
     <div id="map"></div>
   </main>
