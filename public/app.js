@@ -42,12 +42,20 @@ async function selectCity(id) {
   showScreen('screen-mode');
 }
 
-function resolvePlace(input) {
-  const coords = input.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+async function resolvePlace(input) {
+  const raw = input.trim();
+  const coords = raw.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
   if (coords) return { lat: parseFloat(coords[1]), lon: parseFloat(coords[2]) };
-  const needle = input.trim().toLowerCase();
-  const poi = state.pois.find((p) => p.name.toLowerCase().includes(needle));
-  return poi ? { lat: poi.lat, lon: poi.lon } : null;
+  const poi = state.pois.find((p) => p.name.toLowerCase().includes(raw.toLowerCase()));
+  if (poi) return { lat: poi.lat, lon: poi.lon };
+  const query = state.city ? `${raw}, ${state.city.name}` : raw;
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=fr&q=${encodeURIComponent(query)}`
+  );
+  if (!res.ok) throw new Error('Géocodage indisponible (Nominatim) — réessayez dans un instant.');
+  const results = await res.json();
+  if (results.length === 0) return null;
+  return { lat: parseFloat(results[0].lat), lon: parseFloat(results[0].lon) };
 }
 
 function checkedCategories(name) {
@@ -87,8 +95,8 @@ async function withBusy(button, fn) {
 }
 
 el('wanderGo').addEventListener('click', () => withBusy(el('wanderGo'), async () => {
-  const start = resolvePlace(el('wanderStart').value);
-  if (!start) throw new Error('Point de départ introuvable. Utilisez un nom de POI connu ou des coordonnées "lat, lon".');
+  const start = await resolvePlace(el('wanderStart').value);
+  if (!start) throw new Error('Point de départ introuvable. Utilisez une adresse, un nom de POI connu ou des coordonnées "lat, lon".');
   const variants = await planWanderVariants(start, state.pois, {
     duration: parseFloat(el('duration').value) * 3600,
     speed: speeds.walk,
@@ -103,9 +111,9 @@ el('wanderGo').addEventListener('click', () => withBusy(el('wanderGo'), async ()
 }));
 
 el('routeGo').addEventListener('click', () => withBusy(el('routeGo'), async () => {
-  const start = resolvePlace(el('start').value);
-  const end = resolvePlace(el('end').value);
-  if (!start || !end) throw new Error('Point A ou B introuvable. Utilisez un nom de POI connu ou des coordonnées "lat, lon".');
+  const start = await resolvePlace(el('start').value);
+  const end = await resolvePlace(el('end').value);
+  if (!start || !end) throw new Error('Point A ou B introuvable. Utilisez une adresse, un nom de POI connu ou des coordonnées "lat, lon".');
   const route = await planRoute(start, end, state.pois, {
     interest: parseFloat(el('interest').value),
     maxDetour: parseFloat(el('maxDetour').value),

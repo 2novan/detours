@@ -46,7 +46,7 @@
           <label class="cat"><input type="checkbox" name="wcat" value="viewpoint" checked /> Points de vue</label>
         </fieldset>
         <label>Votre point de départ
-          <input id="wanderStart" placeholder="Ex : Châtelet ou 48.8584, 2.2945" />
+          <input id="wanderStart" placeholder="Ex : Châtelet, 12 rue de Rivoli…" />
         </label>
         <button id="wanderGo">Proposer des boucles</button>
         <button class="link back">← Retour au choix du mode</button>
@@ -62,8 +62,8 @@
 
       <section id="screen-route" class="screen" hidden>
         <h2>Itinéraire enrichi à <span id="routeCityName"></span></h2>
-        <label>Point A <input id="start" placeholder="Ex : Tour Eiffel ou 48.8584, 2.2945" /></label>
-        <label>Point B <input id="end" placeholder="Ex : Notre-Dame ou 48.8530, 2.3499" /></label>
+        <label>Point A <input id="start" placeholder="Ex : Tour Eiffel, 5 rue Anatole France…" /></label>
+        <label>Point B <input id="end" placeholder="Ex : Notre-Dame, 4 parvis Notre-Dame…" /></label>
         <label>Mode de déplacement
           <select id="mode">
             <option value="walk" selected>À pied</option>
@@ -101,7 +101,7 @@
     <div id="map"></div>
   </main>
   <footer>
-    <p id="attribution">Carte, données et routage © OpenStreetMap contributors (ODbL) · Routage OSRM · Descriptions Wikipédia/Wikidata (CC BY-SA) · Photos Wikimedia Commons</p>
+    <p id="attribution">Carte, données et routage © OpenStreetMap contributors (ODbL) · Géocodage Nominatim · Routage OSRM · Descriptions Wikipédia/Wikidata (CC BY-SA) · Photos Wikimedia Commons</p>
   </footer>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script type="module" src="app.js"></script>
