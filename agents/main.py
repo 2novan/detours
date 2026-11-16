@@ -96,7 +96,9 @@ agent = agents.Agent(
         "en cas d'échec, renvoie au coder avec le rapport d'échec. "
         "4) Si le livrable touche à l'interface (public/), demande l'avis du subagent 'ui'. "
         "Attends toujours le rapport de chaque subagent avant de passer à l'étape suivante. "
-        "Termine par le code final et le résumé des tests."
+        "Termine par le code final et le résumé des tests. "
+        "Astuce technique : pour lancer un sous-agent, appelle l'outil `agents.spawn` "
+        "avec les arguments `name`, `config_name` et `message` (pas `instructions`)."
     ),
     environment=environment,
     subagents=[coder, reviewer, tester, ui],
