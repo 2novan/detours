@@ -112,9 +112,22 @@ async def main() -> None:
     session = await agent.start_session()
 
     def log(e) -> None:
-        # Ignore le bruit (streaming du texte, mises à jour de session/turn) :
-        # on n'affiche que les vrais événements (appels d'outils, rapports des sous-agents...).
-        if type(e).__name__ in ("Notice", "TextDelta", "SessionUpdated", "TurnUpdated"):
+        """Log lisible : on n'affiche que les appels d'outils et les rapports des sous-agents."""
+        name = type(e).__name__
+        if name in ("Notice", "TextDelta", "SessionUpdated", "TurnUpdated", "TurnStarted"):
+            return
+        if name in ("EntryAdded", "EntryCompleted"):
+            entry = getattr(e, "entry", None)
+            kind = type(entry).__name__ if entry is not None else ""
+            if kind == "ToolCallEntry":
+                print(f"\n🔧 {getattr(entry, 'name', '?')} {getattr(entry, 'arguments', {})}")
+            elif kind == "UnknownEntry":
+                raw = getattr(entry, "raw", {}) or {}
+                if raw.get("type") == "message" and raw.get("kind") == "result":
+                    src = raw.get("source", {}).get("agentPath", "sous-agent")
+                    out = raw.get("termination", {}).get("output", [])
+                    text = "".join(o.get("text", "") for o in out if isinstance(o, dict))
+                    print(f"\n📨 Rapport de {src} :\n{text[:800]}")
             return
         print(e)
 
