@@ -44,14 +44,28 @@ async function overpass(bbox) {
   const [w, s, e, n] = bbox;
   const bb = `${s},${w},${n},${e}`;
   const all = [];
+  const failed = [];
   for (const selector of SELECTORS) {
     console.log(`  ${selector} …`);
     try {
-      const elements = await overpassOnce(`[out:json][timeout:60];${selector}(${bb});out center tags;`);
+      const elements = await overpassOnce(`[out:json][timeout:120];${selector}(${bb});out center tags;`);
       console.log(`  ${selector.padEnd(34)} ${elements.length} résultats`);
       all.push(...elements);
     } catch (err) {
       console.error(`  ${selector} : ${err.message}`);
+      failed.push(selector);
+    }
+  }
+  if (failed.length > 0) {
+    console.log(`Rattrapage de ${failed.length} catégorie(s) échouée(s)…`);
+    for (const selector of failed) {
+      try {
+        const elements = await overpassOnce(`[out:json][timeout:120];${selector}(${bb});out center tags;`);
+        console.log(`  ${selector.padEnd(34)} ${elements.length} résultats (rattrapé)`);
+        all.push(...elements);
+      } catch (err) {
+        console.error(`  ${selector} : toujours indisponible (${err.message}) — relancez plus tard, la fusion est idempotente`);
+      }
     }
   }
   return all;
@@ -70,7 +84,7 @@ async function overpassOnce(query) {
         method: 'POST',
         headers: { ...UA, 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `data=${encodeURIComponent(query)}`,
-        signal: AbortSignal.timeout(45000)
+        signal: AbortSignal.timeout(120000)
       });
       if (!res.ok) throw new Error(`Overpass ${res.status}`);
       const data = await res.json();
