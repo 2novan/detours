@@ -110,7 +110,15 @@ async def main() -> None:
         "(ex. 950 -> '950 m', 1500 -> '1,5 km'), avec relecture et tests."
     )
     session = await agent.start_session()
-    state = await session.run(task, on_event=lambda e: print(e))
+
+    def log(e) -> None:
+        # Ignore le bruit (streaming du texte, mises à jour de session/turn) :
+        # on n'affiche que les vrais événements (appels d'outils, rapports des sous-agents...).
+        if type(e).__name__ in ("Notice", "TextDelta", "SessionUpdated", "TurnUpdated"):
+            return
+        print(e)
+
+    state = await session.run(task, on_event=log)
     if isinstance(state, agents.Completed):
         print("\n=== RAPPORT FINAL ===\n", state.text)
     print("Sous-agents lancés :", len(await session.subagents()))
