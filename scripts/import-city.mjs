@@ -45,8 +45,7 @@ async function overpass(bbox) {
   const bb = `${s},${w},${n},${e}`;
   const all = [];
   for (const selector of SELECTORS) {
-    const query = `[out:json][timeout:60];${selector.replace(/(node|way)/, '$1') === selector ? '' : ''}(${bb});out center tags;`
-      .replace('tags;', 'tags;');
+    console.log(`  ${selector} …`);
     try {
       const elements = await overpassOnce(`[out:json][timeout:60];${selector}(${bb});out center tags;`);
       console.log(`  ${selector.padEnd(34)} ${elements.length} résultats`);
@@ -60,9 +59,9 @@ async function overpass(bbox) {
 
 async function overpassOnce(query) {
   const endpoints = [
-    'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.private.coffee/api/interpreter'
+    'https://overpass.private.coffee/api/interpreter',
+    'https://overpass-api.de/api/interpreter'
   ];
   let lastError = null;
   for (const endpoint of endpoints) {
@@ -70,13 +69,15 @@ async function overpassOnce(query) {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { ...UA, 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `data=${encodeURIComponent(query)}`
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(45000)
       });
       if (!res.ok) throw new Error(`Overpass ${res.status}`);
       const data = await res.json();
       return data.elements ?? [];
     } catch (err) {
       lastError = err;
+      console.error(`    ${new URL(endpoint).host} : ${err.message}`);
     }
   }
   throw lastError ?? new Error('Aucun serveur Overpass disponible');
