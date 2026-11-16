@@ -9,6 +9,17 @@ Appli d'itinéraires qui inverse la logique des Maps classiques : au lieu du tra
 - PWA légère (`public/`) : carte MapLibre GL + tuiles vectorielles OpenFreeMap, saisie A/B, curseur « rapide ↔ intéressant », plafond de détour, filtres de catégories, profil du parcours (distance, durée, détour, score intérêt/détour) et fiches POI.
 - Attribution OSM/ODbL, Wikipédia/Wikidata et Wikimedia Commons intégrée dès la conception.
 
+## Pipeline d'import de ville (OpenStreetMap)
+
+Ajouter une ville sans saisie manuelle :
+
+```bash
+node scripts/import-city.mjs lyon "Lyon"           # nouvelle ville depuis OSM
+node scripts/import-city.mjs paris "Paris" --merge   # enrichit les POI curés existants
+```
+
+Le script géocode la ville (Nominatim), extrait les POI OSM par tag via Overpass (attractions, musées, œuvres d'art, points de vue, monuments, parcs et jardins — dans un rayon de 8 km du centre), calcule un score d'intérêt heuristique (catégorie + présence de lien Wikipédia/Wikidata), dédoublonne et écrit `data/cities/<id>.json` (plafond 600 POI). Avec `--merge`, les POI curés sont conservés et les nouveaux POI OSM à plus de 150 m d'un POI existant sont ajoutés.
+
 ## Parcours utilisateur
 
 1. **Écran ville** : les villes disponibles sont listées automatiquement (`/api/cities` lit `data/cities/`). Ajouter une ville = déposer un JSON, elle apparaît sans aucun changement de code.
