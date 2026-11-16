@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Détours — Le trajet devient la visite</title>
   <meta name="description" content="Itinéraires légèrement plus longs, mais plus intéressants : monuments, street art, jardins et points de vue sur le chemin." />
+  <meta name="theme-color" content="#b3541e" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -15,6 +18,7 @@
 
       <section id="screen-city" class="screen">
         <h2>Où voulez-vous flâner ?</h2>
+        <div class="formError" role="alert" aria-live="polite" hidden></div>
         <div id="cityList"></div>
       </section>
 
@@ -49,12 +53,16 @@
           <input id="wanderStart" placeholder="Ex : Châtelet, 12 rue de Rivoli…" />
         </label>
         <button id="wanderGo">Proposer des boucles</button>
+        <div class="formError" role="alert" aria-live="polite" hidden></div>
         <button class="link back">← Retour au choix du mode</button>
-        <div id="wanderResults" hidden>
+        <div id="wanderResults" aria-live="polite" hidden>
           <h3>Boucles proposées</h3>
           <div id="variantList"></div>
           <div id="wanderProfile"></div>
-          <a id="wanderGmaps" class="gmaps" target="_blank" rel="noopener" hidden>Ouvrir dans Google Maps ↗</a>
+          <div id="wanderExport" class="export-block" hidden>
+            <h3>Exporter l'itinéraire</h3>
+            <div class="export-links"></div>
+          </div>
           <h3>POI de la boucle</h3>
           <ol id="wanderPoiList"></ol>
         </div>
@@ -71,11 +79,11 @@
           </select>
         </label>
         <label>Curseur rapide ↔ intéressant
-          <input type="range" id="interest" min="0" max="1" step="0.05" value="0.6" />
+          <input type="range" id="interest" min="0" max="1" step="0.05" value="0.6" aria-describedby="interestLabel" />
           <span id="interestLabel">Équilibré</span>
         </label>
         <label>Détour maximal autorisé
-          <input type="range" id="maxDetour" min="0.05" max="0.5" step="0.05" value="0.25" />
+          <input type="range" id="maxDetour" min="0.05" max="0.5" step="0.05" value="0.25" aria-describedby="detourLabel" />
           <span id="detourLabel">+25 %</span>
         </label>
         <fieldset>
@@ -87,23 +95,27 @@
           <label class="cat"><input type="checkbox" name="cat" value="viewpoint" checked /> Points de vue</label>
         </fieldset>
         <button id="routeGo">Générer l'itinéraire</button>
+        <div class="formError" role="alert" aria-live="polite" hidden></div>
         <button class="link back">← Retour au choix du mode</button>
-        <div id="routeResults" hidden>
+        <div id="routeResults" aria-live="polite" hidden>
           <h3>Profil du parcours</h3>
           <ul id="stats"></ul>
-          <a id="routeGmaps" class="gmaps" target="_blank" rel="noopener" hidden>Ouvrir dans Google Maps ↗</a>
+          <div id="routeExport" class="export-block" hidden>
+            <h3>Exporter l'itinéraire</h3>
+            <div class="export-links"></div>
+          </div>
           <h3>POI rencontrés</h3>
           <ol id="poiList"></ol>
         </div>
       </section>
 
     </aside>
-    <div id="map"></div>
+    <div id="map" role="img" aria-label="Carte de la ville"></div>
   </main>
   <footer>
     <p id="attribution">Carte, données et routage © OpenStreetMap contributors (ODbL) · Géocodage Nominatim · Routage OSRM · Descriptions Wikipédia/Wikidata (CC BY-SA) · Photos Wikimedia Commons</p>
   </footer>
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="vendor/maplibre-gl.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

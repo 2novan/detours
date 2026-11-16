@@ -6,8 +6,9 @@ const MAX_PIVOTS = 6;
 export const CATEGORIES = ['monument', 'architecture', 'street_art', 'nature', 'viewpoint'];
 
 export function filterPois(pois, categories, city) {
-  if (!city) return pois;
-  return pois.filter((p) => p.city === city && categories.includes(p.category));
+  // Le filtre de catégories s'applique TOUJOURS ; le filtre de ville seulement
+  // quand une ville est fournie (les POI sans ville passent alors quand même).
+  return pois.filter((p) => categories.includes(p.category) && (!city || p.city === city));
 }
 
 function detourCost(poi, a, b) {

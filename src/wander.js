@@ -2,6 +2,31 @@ import { filterPois, CATEGORIES } from './engine.js';
 import { haversine } from './geo.js';
 import { osrmRoute } from './router.js';
 
+// ---------------------------------------------------------------------------
+// Borne supérieure du nombre de POI testés comme candidats à l'insertion :
+// on combine les 10 plus proches et les 12 plus intéressants, dédupliqués,
+// soit au plus ~15 POI évalués (au lieu de tous les POI éligibles), pour éviter
+// des centaines d'appels OSRM.
+// ---------------------------------------------------------------------------
+const MAX_NEAR = 10;
+const MAX_IMPORTANT = 12;
+
+function boundedCandidates(eligible, start) {
+  const nearFirst = [...eligible].sort(
+    (a, b) => haversine(start, a) - haversine(start, b) || b.interest - a.interest
+  );
+  const importantFirst = [...eligible].sort(
+    (a, b) => b.interest - a.interest || haversine(start, a) - haversine(start, b)
+  );
+  const seen = new Set();
+  const candidates = [];
+  for (const p of [...nearFirst.slice(0, MAX_NEAR), ...importantFirst.slice(0, MAX_IMPORTANT)]) {
+    if (seen.has(p)) continue;
+    seen.add(p);
+    candidates.push(p);
+  }
+  return { candidates, nearFirst };
+}
 
 function bearing(from, to) {
   const toRad = (d) => (d * Math.PI) / 180;
@@ -39,11 +64,10 @@ export async function planWander(start, pois, options = {}, deps = {}) {
   const eligible = filterPois(pois, options.categories ?? CATEGORIES, options.city ?? pois[0]?.city)
     .filter((p) => haversine(start, p) >= 150 && haversine(start, p) <= budget / 2);
 
-  const nearFirst = [...eligible].sort((a, b) => haversine(start, a) - haversine(start, b) || b.interest - a.interest);
-  const importantFirst = [...eligible].sort((a, b) => b.interest - a.interest || haversine(start, a) - haversine(start, b));
+  const { candidates, nearFirst } = boundedCandidates(eligible, start);
 
   const accepted = [];
-  for (const poi of [...nearFirst.slice(0, 10), ...importantFirst]) {
+  for (const poi of candidates) {
     if (accepted.includes(poi)) continue;
     let best = null;
     for (let pos = 0; pos <= accepted.length; pos++) {
@@ -65,8 +89,10 @@ export async function planWander(start, pois, options = {}, deps = {}) {
     const attempt = await route([start, nearest, start]);
     return finalize(attempt, [nearest], options, attempt.distance > budget);
   }
+  // Cas éligible vide : géométrie GeoJSON valide (LineString à 2 points,
+  // start -> start), pas un simple [start].
   return {
-    geometry: [start],
+    geometry: [start, start],
     pois: [],
     distance: 0,
     duration: 0,
