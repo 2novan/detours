@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { networkInterfaces } from 'node:os';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, resolve, relative, sep, isAbsolute } from 'node:path';
 
@@ -133,4 +134,15 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '127.0.0.1', () => console.log(`Détours: http://127.0.0.1:${PORT}`));
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Détours local  : http://127.0.0.1:${PORT}`);
+  const lanIps = Object.values(networkInterfaces())
+    .flat()
+    .filter((i) => i && i.family === 'IPv4' && !i.internal)
+    .map((i) => i.address);
+  if (lanIps.length === 0) {
+    console.log('Réseau local : aucune interface détectée');
+  } else {
+    lanIps.forEach((ip) => console.log(`Réseau local : http://${ip}:${PORT}  ← à ouvrir sur votre téléphone`));
+  }
+});
