@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "outputDirectory": "public",
   "functions": {
     "api/cities.js": {
       "includeFiles": "data/cities/*.json"

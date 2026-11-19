@@ -5,6 +5,8 @@ import { join } from 'node:path';
 
 export default async function handler(req, res) {
   try {
+    // Sur Vercel, les fichiers inclus via includeFiles sont copiés à la racine du bundle
+    // (process.cwd() = /var/task) en conservant leur chemin relatif.
     const dir = join(process.cwd(), 'data', 'cities');
     const files = (await readdir(dir)).filter((f) => f.endsWith('.json'));
     const cities = await Promise.all(
