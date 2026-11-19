@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Orchestrateur multi-agents Mistral (coder, reviewer, testeur, ui) pour le projet Détours"
 requires-python = ">=3.12"
 dependencies = [
-    "mistralai-agents",
+    "mistralai-agents[koyeb]",
 ]
 
 [tool.mistralai.agents]
