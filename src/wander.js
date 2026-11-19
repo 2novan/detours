@@ -1,6 +1,6 @@
 import { filterPois, CATEGORIES } from './engine.js';
 import { haversine } from './geo.js';
-import { osrmRoute } from './router.js';
+import { osrmRoute, anchorEndpoints } from './router.js';
 
 // ---------------------------------------------------------------------------
 // Borne supérieure du nombre de POI testés comme candidats à l'insertion :
@@ -82,16 +82,21 @@ export async function planWander(start, pois, options = {}, deps = {}) {
 
   if (accepted.length > 0) {
     const final = await route([start, ...accepted, start]);
-    return finalize(final, accepted, options, false);
+    // Boucle : la géométrie commence ET finit par le départ saisi (OSRM snap
+    // sinon chaque extrémité sur la route la plus proche).
+    return finalize(final, accepted, options, false, start);
   }
   const nearest = nearFirst[0];
   if (nearest) {
     const attempt = await route([start, nearest, start]);
-    return finalize(attempt, [nearest], options, attempt.distance > budget);
+    return finalize(attempt, [nearest], options, attempt.distance > budget, start);
   }
   // Cas éligible vide : géométrie GeoJSON valide (LineString à 2 points,
-  // start -> start), pas un simple [start].
+  // start -> start), pas un simple [start]. Le départ saisi est déjà les deux
+  // extrémités, donc rien à ancrer.
   return {
+    start: { lat: Number(start.lat), lon: Number(start.lon) },
+    end: { lat: Number(start.lat), lon: Number(start.lon) },
     geometry: [start, start],
     pois: [],
     distance: 0,
@@ -103,13 +108,24 @@ export async function planWander(start, pois, options = {}, deps = {}) {
   };
 }
 
-function finalize(route, picks, options, overBudget) {
+function finalize(route, picks, options, overBudget, start) {
   const speed = options.speed ?? 1.35;
   const distance = route.distance;
   const interestScore =
     picks.length === 0 ? 0 : picks.reduce((s, p) => s + p.interest, 0) / Math.max(distance / 1000, 0.5);
+  // Ancrage boucle : start et end sont le même point (le départ saisi), donc
+  // la géométrie commence et finit par lui.
+  const geometry = anchorEndpoints(
+    route.geometry.coordinates.map(([lon, lat]) => ({ lat, lon })),
+    start,
+    start
+  );
   return {
-    geometry: route.geometry.coordinates.map(([lon, lat]) => ({ lat, lon })),
+    // start = end = départ saisi (boucle) : extrémités réelles exposées pour le
+    // front et l'export.
+    start: { lat: Number(start.lat), lon: Number(start.lon) },
+    end: { lat: Number(start.lat), lon: Number(start.lon) },
+    geometry,
     pois: picks,
     distance,
     duration: distance / speed,

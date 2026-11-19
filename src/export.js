@@ -42,18 +42,24 @@ export function escapeXml(value) {
 }
 
 /**
- * Extrémités de l'itinéraire : départ = premier point de la géométrie,
- * arrivée = dernier point (le départ lui-même pour une boucle, route.loop === true).
+ * Extrémités de l'itinéraire : départ et arrivée RÉELS (points saisis), lus
+ * d'abord dans route.start / route.end (renseignés par planRoute/planWander),
+ * avec repli sur le premier/dernier point de la géométrie pour les routes
+ * construites ailleurs. Pour une boucle (route.loop === true), départ = arrivée.
  */
 function endpoints(route) {
-  const pts = (Array.isArray(route?.geometry) ? route.geometry : []).filter(
-    (p) => Number.isFinite(Number(p?.lat)) && Number.isFinite(Number(p?.lon))
-  );
-  const pois = (Array.isArray(route?.pois) ? route.pois : []).filter(
-    (p) => Number.isFinite(Number(p?.lat)) && Number.isFinite(Number(p?.lon))
-  );
-  const start = pts[0] ?? pois[0] ?? null;
-  const end = route?.loop ? start : pts.at(-1) ?? pois.at(-1) ?? start;
+  const valid = (p) =>
+    !!p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon));
+  const pts = (Array.isArray(route?.geometry) ? route.geometry : []).filter(valid);
+  const pois = (Array.isArray(route?.pois) ? route.pois : []).filter(valid);
+  // route.start/route.end priment : OSRM snappe les extrémités de la géométrie
+  // sur la route la plus proche, donc geometry[0] peut être à ~100 m du vrai
+  // point saisi — l'export doit partir du point saisi, pas du point snappé.
+  let start = valid(route?.start) ? { lat: Number(route.start.lat), lon: Number(route.start.lon) } : null;
+  let end = valid(route?.end) ? { lat: Number(route.end.lat), lon: Number(route.end.lon) } : null;
+  if (!start) start = pts[0] ?? pois[0] ?? null;
+  if (!end) end = pts.at(-1) ?? pois.at(-1) ?? start;
+  if (route?.loop) end = start ?? end;
   return { start, end };
 }
 

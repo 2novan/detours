@@ -247,7 +247,14 @@ function renderVariants(variants) {
 function drawRoute(route) {
   const line = route.geometry.map((p) => [p.lon, p.lat]);
   setLine('route', line);
-  if (!route.loop) setLine('direct', [line[0], line.at(-1)]);
+  // Extrémités RÉELLES de l'itinéraire : route.start/route.end (points saisis),
+  // avec repli sur la géométrie pour une route construite sans ces champs.
+  // OSRM snappe les extrémités de geometry sur la route la plus proche : la
+  // ligne « direct » doit relier le vrai départ à la vraie arrivée, pas les
+  // points snappés.
+  const startPt = route.start ?? route.geometry[0];
+  const endPt = route.end ?? route.geometry.at(-1);
+  if (!route.loop) setLine('direct', [[startPt.lon, startPt.lat], [endPt.lon, endPt.lat]]);
   // Chaque layer est ajouté indépendamment : on ne dépend plus de l'ordre
   // d'ajout (bug où la 1ʳᵉ route affichait une boucle à cause du layer manquant).
   if (!map.getLayer('direct-line')) {
@@ -273,6 +280,23 @@ function drawRoute(route) {
     });
     return new maplibregl.Marker({ element: btn }).setLngLat([p.lon, p.lat]).addTo(map);
   });
+  // Marqueur du départ saisi quand OSRM l'a snappé loin (la géométrie affichée
+  // commence alors à plus de ~30 m du vrai point de départ) : repère visuel du
+  // « vrai » départ, distinct des marqueurs numérotés de POI.
+  if (startPt && line[0]) {
+    const snapMeters = haversineMeters(startPt, route.geometry[0]);
+    if (snapMeters > 30) {
+      const btn = document.createElement('button');
+      btn.className = 'poi-marker start-marker';
+      btn.textContent = 'A';
+      btn.title = 'Point de départ saisi';
+      btn.setAttribute('aria-label', 'Point de départ saisi');
+      // Style inline (style.css non modifié) : pastille « A » de départ, verte
+      // comme les POI mais bordée d'orange pour la distinguer.
+      btn.style.background = 'var(--orange, #b3541e)';
+      markers.push(new maplibregl.Marker({ element: btn }).setLngLat([startPt.lon, startPt.lat]).addTo(map));
+    }
+  }
   const bounds = line.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(line[0], line[0]));
   const mobile = window.innerWidth < 768;
   map.fitBounds(bounds, {
@@ -284,6 +308,17 @@ function drawRoute(route) {
     },
     animate: !REDUCED
   });
+}
+
+// Distance en mètres entre deux points {lat, lon} (haversine, rayon terrestre standard).
+function haversineMeters(a, b) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
 }
 
 function setLine(id, coordinates) {

@@ -59,6 +59,48 @@ export async function osrmRoute(points, signal) {
   throw lastError;
 }
 
+// ---------------------------------------------------------------------------
+// ancrage des extrémités : OSRM « snap » chaque waypoint sur la route la plus
+// proche, donc le premier/dernier point de la géométrie renvoyée n'est PAS
+// forcément le point saisi (ex. Tour Eiffel -> ~100 m plus loin sur le quai).
+// On force ici la géométrie finale à commencer par le départ saisi et à finir
+// par l'arrivée saisie : préfixe/suffixe ajoutés seulement si le point OSRM
+// diffère (au-delà de ~1e-6 degré, soit ~0,1 m) pour éviter tout doublon.
+// ---------------------------------------------------------------------------
+const EPSILON_DEG = 1e-6;
+
+function samePoint(a, b) {
+  return (
+    !!a && !!b &&
+    Math.abs(Number(a.lat) - Number(b.lat)) <= EPSILON_DEG &&
+    Math.abs(Number(a.lon) - Number(b.lon)) <= EPSILON_DEG
+  );
+}
+
+/** Copie immuable du point saisi (évite de partager la référence du caller). */
+function clonePoint(p) {
+  return { lat: Number(p.lat), lon: Number(p.lon) };
+}
+
+/**
+ * Reconstruit la géométrie d'un itinéraire pour qu'elle commence par `start`
+ * et finisse par `end` (les vrais points saisis). `end` peut être identique à
+ * `start` (boucle) : la géométrie commence alors ET finit par le départ saisi.
+ */
+export function anchorEndpoints(geometry, start, end) {
+  const line = Array.isArray(geometry) ? geometry : [];
+  const first = line[0];
+  const last = line.at(-1);
+  let out = line;
+  if (!samePoint(first, start)) {
+    out = [clonePoint(start), ...out];
+  }
+  if (!samePoint(out.at(-1) ?? last, end)) {
+    out = [...out, clonePoint(end)];
+  }
+  return out;
+}
+
 export async function planRoute(start, end, pois, options = {}, deps = {}) {
   const route = deps.osrmRoute ?? osrmRoute;
   // On filtre les POI en tête : catégories toujours appliquées, ville seulement
@@ -92,7 +134,7 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
     else rejected.push({ poi, added });
   }
   const final = accepted.length > 0 ? await route([start, ...accepted, end]) : direct;
-  const result = finalize(final, direct, accepted, options);
+  const result = finalize(final, direct, accepted, options, start, end);
   if (accepted.length === 0 && rejected.length > 0) {
     const cheapest = rejected.sort((a, b) => a.added - b.added)[0];
     result.bestMissed = {
@@ -103,14 +145,25 @@ export async function planRoute(start, end, pois, options = {}, deps = {}) {
   return result;
 }
 
-function finalize(route, direct, pivots, options) {
+function finalize(route, direct, pivots, options, start, end) {
   const distance = route.distance;
   const detour = direct.distance > 0 ? distance / direct.distance - 1 : 0;
   const speed = options.speed ?? 1.35;
   const interestScore =
     pivots.length === 0 ? 0 : pivots.reduce((s, p) => s + p.interest, 0) / Math.max(distance / 1000, 0.5);
+  // Ancrage : la géométrie affichée/exportée commence par le départ saisi et
+  // finit par l'arrivée saisie, même si OSRM a snappé les extrémités ailleurs.
+  const geometry = anchorEndpoints(
+    route.geometry.coordinates.map(([lon, lat]) => ({ lat, lon })),
+    start,
+    end
+  );
   return {
-    geometry: route.geometry.coordinates.map(([lon, lat]) => ({ lat, lon })),
+    // start/end = extrémités RÉELLES utilisées (points saisis), exposées pour
+    // que le front et l'export ne déduisent plus geometry[0]/geometry.at(-1).
+    start: clonePoint(start),
+    end: clonePoint(end),
+    geometry,
     pois: pivots,
     distance,
     directDistance: direct.distance,
