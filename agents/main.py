@@ -69,9 +69,15 @@ ui = agents.Subagent(
 # ⭐ C'est ICI que se branche l'environnement d'exécution (environment=).
 # Les sous-agents héritent automatiquement du même sandbox.
 
-_USE_PRODUCTION_SANDBOX = os.environ.get("DETOURS_AGENT_PROD", "") == "1"
+# Par défaut : sandbox Mistral Cloud (prod/déployé). Un déploiement avec sous-agents
+# REFUSE DangerousLocalSandbox, donc le local doit être demandé explicitement.
+_USE_LOCAL_SANDBOX = os.environ.get("DETOURS_AGENT_LOCAL", "") == "1"
 
-if _USE_PRODUCTION_SANDBOX:
+if _USE_LOCAL_SANDBOX:
+    # Développement local : les agents travaillent directement sur votre machine.
+    # ⚠️ Nécessite ALLOW_DANGEROUS_LOCAL_HOST=1 — ne jamais utiliser hors local.
+    environment = agents.DangerousLocalSandbox()
+else:
     # Production (déployé) : container Mistral Cloud + accès GitHub limité au dépôt.
     # Nécessite : uv add 'mistralai-agents[koyeb]', le rôle cloud_user,
     # et un connecteur GitHub pour l'utilisateur qui lance la session.
@@ -81,10 +87,6 @@ if _USE_PRODUCTION_SANDBOX:
             agents.GitHubBinding(repos=("2novan/detours",)),
         ),
     )
-else:
-    # Développement local : les agents travaillent directement sur votre machine.
-    # ⚠️ Nécessite ALLOW_DANGEROUS_LOCAL_HOST=1 — ne jamais utiliser hors local.
-    environment = agents.DangerousLocalSandbox()
 
 agent = agents.Agent(
     name="detours-orchestrateur",

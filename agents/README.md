@@ -19,9 +19,17 @@ En local, les agents travaillent directement sur les fichiers du dépôt
 
 ## Passer en production (sandbox Mistral Cloud + GitHub)
 
+Le sandbox **MistralSandbox + GitHubBinding est le défaut** (prod/déployé) :
+aucune variable à définir. Le sandbox local n'est utilisé que si demandé
+explicitement :
+
+```bash
+export DETOURS_AGENT_LOCAL=1            # force le DangerousLocalSandbox (local uniquement)
+```
+
 ```bash
 uv add 'mistralai-agents[koyeb]'          # support du MistralSandbox
-export DETOURS_AGENT_PROD=1               # active le bloc MistralSandbox + GitHubBinding
+uv run agents deploy                      # déploiement managé Mistral
 ```
 
 Prérequis production : rôle `cloud_user` sur le workspace, connecteur GitHub
