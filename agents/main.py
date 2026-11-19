@@ -34,7 +34,7 @@ coder = agents.Subagent(
 reviewer = agents.Subagent(
     name="reviewer",
     description="Relit le code et répond exactement VERDICT: OK, ou une liste de problèmes classés par sévérité.",
-    model="mistral-small-latest",  # la relecture n'a pas besoin du gros modèle
+    model="mistral-large-latest",
     instructions=(
         "Tu es un relecteur de code strict. Tu ne corriges PAS le code toi-même. "
         "Tu retournes une liste de problèmes classés par sévérité (critique / majeur / mineur), "
@@ -46,7 +46,7 @@ reviewer = agents.Subagent(
 tester = agents.Subagent(
     name="tester",
     description="Écrit et exécute les tests du projet (node --test) sur le code fourni.",
-    model="mistral-small-latest",  # écrire/rouler des tests = tâche simple
+    model="mistral-large-latest",
     instructions=(
         "Tu es un ingénieur QA sur le projet Détours. "
         "Tu écris des tests dans test/ couvrant cas nominaux, cas limites et entrées invalides, "
@@ -57,7 +57,7 @@ tester = agents.Subagent(
 ui = agents.Subagent(
     name="ui",
     description="Spécialiste UI/UX de la PWA (public/) : accessibilité, hiérarchie visuelle, responsive, cohérence.",
-    model="mistral-small-latest",
+    model="mistral-large-latest",
     instructions=(
         "Tu es un spécialiste UI/UX. Tu évalues l'interface : hiérarchie visuelle, accessibilité "
         "(contraste, tailles, ARIA), responsive, cohérence des composants, performance perçue. "
@@ -88,7 +88,7 @@ else:
 
 agent = agents.Agent(
     name="detours-orchestrateur",
-    model="mistral-medium-latest",  # l'orchestrateur coordonne, pas besoin du plus gros modèle
+    model="mistral-large-latest",
     instructions=(
         "Tu coordonnes une équipe de spécialistes pour faire évoluer le projet Détours "
         "(application d'itinéraires touristiques en JavaScript/Node, voir README.md). "
